@@ -3,11 +3,12 @@
 
 <head>
   <meta charset="utf-8" />
-  <title>Adventure360 — Video-first MVP (auto image by scene name)</title>
+  <title>Adventure360 Player</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css">
   <script src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <style>
     :root {
       --bg: #0c0d10;
@@ -218,6 +219,7 @@
       background: #11141a;
       padding: 10px 16px;
       border-bottom: 1px solid #2d3745;
+      flex-shrink: 0;
     }
 
     #overlayHeader {
@@ -226,6 +228,7 @@
       padding: 8px 12px;
       gap: 8px;
       border-bottom: 1px solid #2d3745;
+      flex-shrink: 0;
     }
 
     #overlayTitle {
@@ -237,17 +240,24 @@
     }
 
     #overlayBody {
+      flex: 1;
       position: relative;
-      flex: 1 1 auto;
-      background: #0f1117;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      background: #000;
     }
 
     #overlayImage {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
       display: block;
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      flex: 1;
     }
+
 
     #overlayActions {
       padding: 10px;
@@ -482,16 +492,24 @@
     <section class="card">
       <h2 class="h">Play</h2>
       <div class="row" style="margin-bottom:8px;">
-        <label class="muted">Start scene:</label>
-        <select id="startSelect"></select>
-        <button id="btnStart">Start</button>
-        <span class="rightLabel">Asset base:</span>
-        <input id="assetBase" placeholder="https://your-bucket/" style="min-width:220px;">
-        <select id="imgExt">
-          <option value="jpg">.jpg</option>
-          <option value="png">.png</option>
-          <option value="webp">.webp</option>
-        </select>
+        <h1>Adventure360</h1>
+        <p>Interactive 360° Text Adventure Engine</p>
+        <div style="margin-top:20px; display:flex; gap:10px; justify-content:center;">
+          <select id="startSelect"></select>
+          <button id="btnStart">Start Game</button>
+        </div>
+        <div style="margin-top:10px;">
+          <button id="btnLoadZip" class="viewerBtn" style="background:#8a6d3b;">Load Game ZIP</button>
+          <input type="file" id="fileLoadZip" accept=".zip" style="display:none">
+        </div>
+        <div style="margin-top:20px; font-size:12px; color:#666;">
+          <label>Asset Base Path: <input id="assetBase" value="" placeholder="./assets/"></label>
+          <select id="imgExt">
+            <option value="jpg">.jpg</option>
+            <option value="png">.png</option>
+            <option value="webp">.webp</option>
+          </select>
+        </div>
       </div>
 
       <h3 class="h" id="sceneTitle">—</h3>
@@ -672,6 +690,8 @@ Soft moonlit shadows, mild atmospheric haze, physically based lighting.
 
     const elStartSelect = document.getElementById("startSelect");
     const elBtnStart = document.getElementById("btnStart");
+    const elBtnLoadZip = document.getElementById("btnLoadZip");
+    const elFileLoadZip = document.getElementById("fileLoadZip");
     const elAssetBase = document.getElementById("assetBase");
     const elImgExt = document.getElementById("imgExt");
 
@@ -720,6 +740,12 @@ Soft moonlit shadows, mild atmospheric haze, physically based lighting.
       save() { saveGraph(this.data); },
       reset() { this.data = loadGraph(); },
       setGraph(g) { this.data = g; this.normalize(); this.save(); },
+      load(scenes, startSceneId = null) {
+        this.data.scenes = scenes;
+        this.data.start = startSceneId || (scenes[0] && scenes[0].id) || "";
+        this.normalize();
+        this.save();
+      },
       add(scene) { this.data.scenes.push(scene); this.save(); },
       delete(id) {
         this.data.scenes = this.data.scenes.filter(s => s.id !== id);
@@ -792,17 +818,14 @@ Soft moonlit shadows, mild atmospheric haze, physically based lighting.
 
     const UIStore = {
       data: loadUI(),
+      blobRegistry: new Map(), // id -> blobUrl
       save() { saveUI(this.data); },
-      derivedImageUrl(sceneId) {
-        let base = (this.data.assetBase || "").trim();
-        // Normalize leading slash when opened from file:// so assets resolve relative to this folder.
-        if (typeof window !== "undefined" && window.location && window.location.protocol === "file:" && base.startsWith("/")) {
-          base = `.${base}`;
-        }
-        if (base === ".") base = "";
-        const ext = (this.data.imgExt || "jpg").trim();
-        const slash = base && !base.endsWith("/") ? "/" : "";
-        return `${base}${slash}${sceneId}.pano.${ext}`;
+      derivedImageUrl(id) {
+        // Check blob registry first (for ZIP loaded games)
+        if (this.blobRegistry.has(id)) return this.blobRegistry.get(id);
+
+        const ext = (document.getElementById("imgExt") || {}).value || "png";
+        return `${this.data.assetBase}${id}.pano.${ext}`;
       }
     };
 
@@ -816,6 +839,10 @@ Soft moonlit shadows, mild atmospheric haze, physically based lighting.
         if (!item) return;
         this.data.inventory = this.data.inventory || [];
         if (!this.data.inventory.includes(item)) this.data.inventory.push(item);
+        saveState(this.data);
+      },
+      reset(startSceneId = null) {
+        this.data = { current: startSceneId, overlay: null, inventory: [] };
         saveState(this.data);
       }
     };
@@ -859,6 +886,7 @@ Soft moonlit shadows, mild atmospheric haze, physically based lighting.
         else this.setImage(imgUrl);
         elPlayActions.innerHTML = "";
         (scene.actions || []).forEach(a => {
+          if (!PlayEngine.checkCondition(a)) return;
           const btn = document.createElement("button");
           btn.textContent = a.label || a.cmd || "(action)";
           btn.addEventListener("click", () => { elCmdInput.value = a.cmd; PlayEngine.goCommand(a.cmd, scene.id); });
@@ -1005,6 +1033,7 @@ Soft moonlit shadows, mild atmospheric haze, physically based lighting.
       if (!elViewerActions) return;
       elViewerActions.innerHTML = "";
       (actions || []).forEach(a => {
+        if (!PlayEngine.checkCondition(a)) return;
         const btn = document.createElement("button");
         btn.textContent = a.label || a.cmd || "(action)";
         btn.addEventListener("click", () => { PlayEngine.goCommand(a.cmd, StateStore.current); });
@@ -1038,6 +1067,7 @@ Soft moonlit shadows, mild atmospheric haze, physically based lighting.
       elOverlay.style.display = "flex";
       elOverlayActions.innerHTML = "";
       (scene.actions || []).forEach(a => {
+        if (!PlayEngine.checkCondition(a)) return;
         const btn = document.createElement("button");
         btn.textContent = a.label || a.cmd || "(action)";
         btn.addEventListener("click", () => { PlayEngine.goCommand(a.cmd, scene.id); });
@@ -1142,15 +1172,17 @@ Soft moonlit shadows, mild atmospheric haze, physically based lighting.
       <input placeholder="label (button text)" value="${a.label || ""}" style="flex:1 1 160px;">
       <input placeholder="successor id (move/interact)" value="${a.successor || ""}" style="flex:1 1 150px;">
       <input placeholder="overlay scene (look)" value="${a.overlayScene || ""}" style="flex:1 1 150px;">
-      <input placeholder="gives item (interact)" value="${a.givesItem || ""}" style="flex:1 1 140px;">
-      <label style="display:flex;align-items:center;gap:4px;font-size:12px;">
-        <input type="checkbox" ${a.closeOverlayOnSuccess ? "checked" : ""}> close overlay
-      </label>
+  <input placeholder="gives item (interact)" value="${a.givesItem || ""}" style="flex:1 1 140px;">
+  <input placeholder="required items (csv)" value="${(a.requiredItems || []).join(",")}" style="flex:1 1 140px;">
+  <input placeholder="hidden if has (csv)" value="${(a.hiddenIfHas || []).join(",")}" style="flex:1 1 140px;">
+  <label style="display:flex;align-items:center;gap:4px;font-size:12px;">
+    <input type="checkbox" ${a.closeOverlayOnSuccess ? "checked" : ""}> close overlay
+  </label>
       <button class="danger">✕</button>
     `;
         const selType = row.querySelector(".actionType");
         selType.value = a.type || "move";
-        const [inCmd, inLabel, inSucc, inOverlay, inItem, inClose] = row.querySelectorAll("input");
+        const [inCmd, inLabel, inSucc, inOverlay, inItem, inReq, inHidden, inClose] = row.querySelectorAll("input");
         const delBtn = row.querySelector("button.danger");
         delBtn.addEventListener("click", () => {
           scene.actions.splice(idx, 1);
@@ -1167,12 +1199,14 @@ Soft moonlit shadows, mild atmospheric haze, physically based lighting.
           a.successor = inSucc.value.trim();
           a.overlayScene = inOverlay.value.trim();
           a.givesItem = inItem.value.trim();
+          a.requiredItems = inReq.value.split(",").map(x => x.trim()).filter(x => x);
+          a.hiddenIfHas = inHidden.value.split(",").map(x => x.trim()).filter(x => x);
           a.closeOverlayOnSuccess = inClose.checked;
           SceneStore.save();
           renderValidation(scene.id);
           renderViewerActions(scene.actions || []);
         };
-        [inCmd, inLabel, inSucc, inOverlay, inItem].forEach(input => {
+        [inCmd, inLabel, inSucc, inOverlay, inItem, inReq, inHidden].forEach(input => {
           input.addEventListener("blur", () => {
             persist();
           });
@@ -1216,6 +1250,35 @@ Soft moonlit shadows, mild atmospheric haze, physically based lighting.
        Play + navigation
        ========================= */
     const PlayEngine = {
+      checkCondition(action) {
+        if (!action) return false;
+        const inv = StateStore.data.inventory || [];
+
+        // Check required items (ALL must be present)
+        if (action.requiredItems && Array.isArray(action.requiredItems)) {
+          for (const item of action.requiredItems) {
+            if (!inv.includes(item)) return false;
+          }
+        }
+
+        // Check hiddenIfHas items (NONE must be present)
+        if (action.hiddenIfHas && Array.isArray(action.hiddenIfHas)) {
+          for (const item of action.hiddenIfHas) {
+            if (inv.includes(item)) return false;
+          }
+        }
+
+        return true;
+      },
+      start(startSceneId) {
+        SceneStore.data.start = startSceneId;
+        SceneStore.save();
+        StateStore.current = startSceneId;
+        Renderer.showScene(SceneStore.get(StateStore.current));
+        refreshSceneList(StateStore.current);
+        if (SceneStore.data.scenes.length) loadEditor(StateStore.current);
+        renderInventory();
+      },
       goCommand(cmdOverride = null, sceneOverride = null) {
         const input = (cmdOverride || elCmdInput.value || "").trim().toLowerCase();
         if (!input) return;
@@ -1334,10 +1397,59 @@ Soft moonlit shadows, mild atmospheric haze, physically based lighting.
     boot();
 
     elBtnStart.addEventListener("click", () => {
-      SceneStore.data.start = elStartSelect.value;
-      SceneStore.save();
-      StateStore.current = SceneStore.data.start;
-      Renderer.showScene(SceneStore.get(StateStore.current));
+      const val = elStartSelect.value;
+      if (!val) return;
+      PlayEngine.start(val);
+    });
+
+    elBtnLoadZip.addEventListener("click", () => elFileLoadZip.click());
+    elFileLoadZip.addEventListener("change", async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      try {
+        const zip = await JSZip.loadAsync(file);
+
+        // 1. Load game.json
+        const jsonFile = zip.file("game.json");
+        if (!jsonFile) throw new Error("game.json not found in ZIP");
+
+        const jsonText = await jsonFile.async("text");
+        const gameData = JSON.parse(jsonText);
+
+        // Load into stores
+        SceneStore.load(gameData.scenes || [], gameData.start);
+        StateStore.reset(gameData.start);
+
+        // 2. Load Images into Blob Registry
+        UIStore.blobRegistry.clear();
+        const promises = [];
+        zip.forEach((relativePath, zipEntry) => {
+          if (zipEntry.name.match(/\.(png|jpg|jpeg)$/i)) {
+            promises.push(async () => {
+              const blob = await zipEntry.async("blob");
+              const url = URL.createObjectURL(blob);
+              // Assuming image names are like "scene-id.pano.jpg"
+              const idMatch = zipEntry.name.match(/([^/]+)\.pano\.(png|jpg|jpeg)$/i);
+              if (idMatch && idMatch[1]) {
+                UIStore.blobRegistry.set(idMatch[1], url);
+              }
+            });
+          }
+        });
+
+        // Execute all blob conversions
+        await Promise.all(promises.map(p => p()));
+
+        // 3. Start Game
+        alert(`Loaded game with ${gameData.scenes.length} scenes and ${UIStore.blobRegistry.size} images.`);
+        PlayEngine.start(gameData.start);
+
+      } catch (err) {
+        console.error(err);
+        alert("Failed to load ZIP: " + err.message);
+      }
+      e.target.value = "";
     });
 
     elAssetBase.addEventListener("change", () => { UIStore.data.assetBase = elAssetBase.value.trim(); UIStore.save(); Renderer.showScene(SceneStore.get(StateStore.current)); loadEditor(StateStore.current); });

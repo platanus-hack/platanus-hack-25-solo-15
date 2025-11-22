@@ -5,6 +5,7 @@
   <meta charset="utf-8" />
   <title>Adventure360 Agent Builder</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <style>
     :root {
       --bg: #0d1016;
@@ -263,6 +264,9 @@
       <div class="row" style="margin-top:10px;">
         <button id="btnGenerate">Generate with Gemini</button>
         <button id="btnGenerateAllImages" style="background:#2d4a2f; border-color:#436e46;">Generate All Images</button>
+        <button id="btnImportImages" style="background:#2d3a4a; border-color:#435e6e;">Import Images</button>
+        <button id="btnExportZip" style="background:#8a6d3b; border-color:#a88d5e;">Export Game ZIP</button>
+        <input type="file" id="fileImportImages" multiple accept="image/*" style="display:none">
       </div>
       <div class="row" style="margin-top:10px;">
         <button id="btnAddScene">Add Base Scene</button>
@@ -335,9 +339,18 @@ Soft moonlit shadows, mild atmospheric haze, physically based lighting.`;
     const btnReset = document.getElementById("btnReset");
     const btnGenerate = document.getElementById("btnGenerate");
     const btnGenerateAllImages = document.getElementById("btnGenerateAllImages");
+    const btnImportImages = document.getElementById("btnImportImages");
+    const fileImportImages = document.getElementById("fileImportImages");
+    const btnExportZip = document.getElementById("btnExportZip");
 
     btnGenerate.addEventListener("click", generateGameGraph);
     btnGenerateAllImages.addEventListener("click", generateAllImages);
+    btnImportImages.addEventListener("click", () => fileImportImages.click());
+    fileImportImages.addEventListener("change", importImages);
+    btnExportZip.addEventListener("click", exportGameZip);
+
+    // In-memory storage for generated image blobs
+    const imageBlobs = new Map(); // id -> Blob
 
     // Build a model-ready prompt that respects base vs overlay rendering rules.
     // Build a model-ready prompt that respects base vs overlay rendering rules.
@@ -446,6 +459,8 @@ Soft moonlit shadows, mild atmospheric haze, physically based lighting.`;
           -   \`successor\`: (Required for "move") The \`id\` of the destination scene.
           -   \`overlayScene\`: (Required for "look" if opening an overlay) The \`id\` of the overlay scene.
           -   \`givesItem\`: (Optional for "interact") String ID of an item added to inventory.
+          -   \`requiredItems\`: (Optional) Array of item IDs that MUST be in inventory for this action to appear.
+          -   \`hiddenIfHas\`: (Optional) Array of item IDs that, if present in inventory, will HIDE this action.
           -   \`closeOverlayOnSuccess\`: (Boolean) True if the action closes the current overlay (e.g., "Leave", "Back").
       
       **Game Logic & Consistency Rules:**
@@ -471,10 +486,40 @@ Soft moonlit shadows, mild atmospheric haze, physically based lighting.`;
           },
           {
              "id": "library",
-             ...
+             "kind": "base",
+             "title": "Library",
+             "description": "A vast library filled with ancient tomes. A small, locked desk sits in the corner.",
+             "image_prompt": "Vast library, ancient tomes, locked desk in corner. East is forward.",
+             "actions": [
+               { "type": "move", "cmd": "south", "label": "Go South", "successor": "entry-hall" },
+               { "type": "look", "cmd": "look desk", "label": "Inspect Desk", "overlayScene": "library-desk" }
+             ]
+          },
+          {
+            "id": "library-desk",
+            "kind": "overlay",
+            "title": "Close-up: Desk",
+            "description": "A close-up of the locked desk. There's a small keyhole.",
+            "image_prompt": "Close-up of an old, locked wooden desk with a keyhole.",
+            "parentScene": "library",
+            "actions": [
+              { "type": "interact", "cmd": "use key", "label": "Use Small Key", "givesItem": "old-parchment", "requiredItems": ["small-key"], "hiddenIfHas": ["old-parchment"] },
+              { "type": "move", "cmd": "back", "label": "Go Back", "closeOverlayOnSuccess": true }
+            ]
           }
         ]
       }
+
+      IMPORTANT RULES:
+      1. "kind" MUST be "base" or "overlay".
+      2. "base" scenes MUST use "image_prompt" for Equirectangular 360° panoramas.
+      3. "overlay" scenes MUST use "image_prompt" for Flat 2D close-ups.
+      4. "overlay" scenes should not be nested more than 3 levels deep.
+      5. "move" actions MUST be compass-aligned (East is forward).
+      6. "look" actions MUST trigger overlays.
+      7. "requiredItems": List of item IDs that MUST be in inventory to show this action.
+      8. "hiddenIfHas": List of item IDs that, if present, HIDE this action.
+      9. Ensure a coherent story and WIN condition.
 
       Generate the complete JSON now.
     `;
@@ -529,8 +574,6 @@ Soft moonlit shadows, mild atmospheric haze, physically based lighting.`;
         if (imagePart) {
           const base64Data = imagePart.inlineData.data;
           const mimeType = imagePart.inlineData.mimeType || "image/png";
-          const ext = scene.kind === "overlay" ? "png" : (data.imgExt || "jpg");
-          const filename = scene.kind === "overlay" ? `${scene.id}.png` : `${scene.id}.pano.${ext}`;
 
           const byteCharacters = atob(base64Data);
           const byteNumbers = new Array(byteCharacters.length);
@@ -540,10 +583,14 @@ Soft moonlit shadows, mild atmospheric haze, physically based lighting.`;
           const byteArray = new Uint8Array(byteNumbers);
           const blob = new Blob([byteArray], { type: mimeType });
 
+          // Store for ZIP export
+          imageBlobs.set(scene.id, blob);
+
+          // Auto-download
           const url = URL.createObjectURL(blob);
           const a = document.createElement("a");
           a.href = url;
-          a.download = filename;
+          a.download = `${scene.id}.png`; // Unified naming
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
@@ -587,6 +634,53 @@ Soft moonlit shadows, mild atmospheric haze, physically based lighting.`;
         btnGenerateAllImages.textContent = "Generate All Images";
         btnGenerateAllImages.disabled = false;
       }
+    }
+
+    async function exportGameZip() {
+      if (!data.scenes || data.scenes.length === 0) { alert("No game data to export."); return; }
+
+      const zip = new JSZip();
+
+      // Add game.json
+      zip.file("game.json", JSON.stringify(data, null, 2));
+
+      // Add images
+      let imageCount = 0;
+      imageBlobs.forEach((blob, id) => {
+        zip.file(`${id}.png`, blob);
+        imageCount++;
+      });
+
+      if (imageCount === 0) {
+        if (!confirm("No images have been generated in this session. The ZIP will only contain game.json. Continue?")) return;
+      } else if (imageCount < data.scenes.length) {
+        if (!confirm(`Only ${imageCount} out of ${data.scenes.length} scenes have generated images in this session. Continue?`)) return;
+      }
+
+      const content = await zip.generateAsync({ type: "blob" });
+      const url = window.URL.createObjectURL(content);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "adventure_game.zip";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    }
+
+    async function importImages(e) {
+      const files = Array.from(e.target.files);
+      if (!files.length) return;
+
+      let count = 0;
+      for (const file of files) {
+        // Assume filename matches scene id (e.g. "lobby.png" -> "lobby")
+        const id = file.name.replace(/\.[^/.]+$/, "");
+        imageBlobs.set(id, file);
+        count++;
+      }
+      alert(`Imported ${count} images. They will be included in the ZIP export.`);
+      e.target.value = ""; // Reset
     }
 
     // --- UI LOGIC ---
@@ -675,6 +769,10 @@ Soft moonlit shadows, mild atmospheric haze, physically based lighting.`;
           <input data-afield="successor" placeholder="successor" value="${a.successor || ""}">
           <input data-afield="overlayScene" placeholder="overlay scene" value="${a.overlayScene || ""}">
           <input data-afield="givesItem" placeholder="gives item" value="${a.givesItem || ""}">
+        </div>
+        <div class="row" style="gap:6px; margin-top:4px;">
+          <input data-afield="requiredItems" placeholder="required items (csv)" value="${(a.requiredItems || []).join(",")}">
+          <input data-afield="hiddenIfHas" placeholder="hidden if has (csv)" value="${(a.hiddenIfHas || []).join(",")}">
           <label style="display:flex;align-items:center;gap:4px;font-size:12px;">
             <input type="checkbox" data-afield="closeOverlayOnSuccess" ${a.closeOverlayOnSuccess ? "checked" : ""}> close overlay
           </label>
@@ -704,7 +802,7 @@ Soft moonlit shadows, mild atmospheric haze, physically based lighting.`;
         });
         div.querySelector('[data-action="addAction"]').addEventListener("click", () => {
           s.actions = s.actions || [];
-          s.actions.push({ type: "move", cmd: "", label: "", successor: "", overlayScene: "", givesItem: "", closeOverlayOnSuccess: false });
+          s.actions.push({ type: "move", cmd: "", label: "", successor: "", overlayScene: "", givesItem: "", requiredItems: [], hiddenIfHas: [], closeOverlayOnSuccess: false });
           save(); renderScenes();
         });
         div.querySelector('[data-action="generateImage"]').addEventListener("click", (e) => {
@@ -802,11 +900,17 @@ Soft moonlit shadows, mild atmospheric haze, physically based lighting.`;
     }
 
     function applyActionEdit(sidx, aidx, container) {
-      const a = data.scenes[sidx].actions[aidx];
+      const s = data.scenes[sidx];
+      const a = s.actions[aidx];
       container.querySelectorAll("[data-afield]").forEach(inp => {
-        const key = inp.dataset.afield;
-        if (inp.type === "checkbox") a[key] = inp.checked;
-        else a[key] = inp.value;
+        const field = inp.dataset.afield;
+        if (field === "closeOverlayOnSuccess") {
+          a[field] = inp.checked;
+        } else if (field === "requiredItems" || field === "hiddenIfHas") {
+          a[field] = inp.value.split(",").map(x => x.trim()).filter(x => x);
+        } else {
+          a[field] = inp.value;
+        }
       });
       a.cmd = (a.cmd || "").trim().toLowerCase();
       a.type = (a.type || "move").toLowerCase();
