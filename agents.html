@@ -1,352 +1,666 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="utf-8" />
-<title>Adventure360 Agent Builder</title>
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<style>
-  :root { --bg:#0d1016; --card:#121722; --fg:#eef2f8; --muted:#9aa5b8; --line:#1e2733; --accent:#4e8ef7; }
-  * { box-sizing:border-box; }
-  body { margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; background:var(--bg); color:var(--fg); }
-  header { padding:14px 16px; border-bottom:1px solid var(--line); display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-  h1 { margin:0; font-size:18px; }
-  main { display:grid; grid-template-columns: 320px 1fr; gap:12px; padding:12px 16px 24px; }
-  @media (max-width:1000px) { main { grid-template-columns:1fr; } }
-  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:12px; }
-  .h { font-size:15px; font-weight:700; margin:0 0 8px; }
-  label { display:block; margin:6px 0 4px; color:var(--muted); font-size:13px; }
-  input, textarea, select, button { width:100%; border-radius:8px; border:1px solid var(--line); background:#151b26; color:var(--fg); padding:8px 10px; font-size:14px; }
-  textarea { min-height:90px; resize:vertical; }
-  button { cursor:pointer; }
-  button:hover { border-color:#2a3a52; }
-  .row { display:flex; gap:8px; flex-wrap:wrap; }
-  .pill { display:inline-block; padding:4px 10px; border-radius:20px; background:#151b26; border:1px solid var(--line); font-size:12px; color:var(--muted); }
-  .scene { border:1px solid var(--line); border-radius:10px; padding:10px; margin-bottom:10px; background:#0f131d; }
-  .actions { display:grid; gap:6px; }
-  .action-row { border:1px solid var(--line); border-radius:8px; padding:8px; background:#0f141e; }
-  .muted { color:var(--muted); }
-  .tag { display:inline-block; padding:2px 6px; border-radius:6px; border:1px solid var(--line); font-size:11px; color:#c8d5e8; }
-  .danger { background:#29141a; border-color:#4b1e28; }
-  .small { width:auto; padding:6px 10px; }
-  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
-</style>
+  <meta charset="utf-8" />
+  <title>Adventure360 Agent Builder</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg: #0d1016;
+      --card: #121722;
+      --fg: #eef2f8;
+      --muted: #9aa5b8;
+      --line: #1e2733;
+      --accent: #4e8ef7;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+    }
+
+    header {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 12px;
+      padding: 12px 16px 24px;
+    }
+
+    @media (max-width:1000px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px;
+    }
+
+    .h {
+      font-size: 15px;
+      font-weight: 700;
+      margin: 0 0 8px;
+    }
+
+    label {
+      display: block;
+      margin: 6px 0 4px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    input,
+    textarea,
+    select,
+    button {
+      width: 100%;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: #151b26;
+      color: var(--fg);
+      padding: 8px 10px;
+      font-size: 14px;
+    }
+
+    textarea {
+      min-height: 90px;
+      resize: vertical;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    button:hover {
+      border-color: #2a3a52;
+    }
+
+    .row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: #151b26;
+      border: 1px solid var(--line);
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .scene {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px;
+      margin-bottom: 10px;
+      background: #0f131d;
+    }
+
+    .actions {
+      display: grid;
+      gap: 6px;
+    }
+
+    .action-row {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px;
+      background: #0f141e;
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    .tag {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 6px;
+      border: 1px solid var(--line);
+      font-size: 11px;
+      color: #c8d5e8;
+    }
+
+    .danger {
+      background: #29141a;
+      border-color: #4b1e28;
+    }
+
+    .small {
+      width: auto;
+      padding: 6px 10px;
+    }
+
+    .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    }
+
+    .note {
+      font-size: 12px;
+      color: #c1ccdd;
+      background: #141925;
+      border: 1px solid #1f2937;
+      border-radius: 8px;
+      padding: 8px;
+      margin: 8px 0;
+    }
+
+    .scene-card {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 16px;
+      background: #0f131d;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .scene-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #1e2733;
+    }
+
+    .overlays-container {
+      margin-top: 12px;
+      padding-left: 16px;
+      border-left: 2px solid #2a3a52;
+      display: grid;
+      gap: 12px;
+    }
+
+    .overlay-card {
+      background: #131720;
+      border: 1px solid #2a313b;
+      border-radius: 8px;
+      padding: 10px;
+    }
+
+    .overlay-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #5c7cfa;
+      margin-bottom: 4px;
+      font-weight: 700;
+    }
+  </style>
 </head>
+
 <body>
-<header>
-  <h1>Adventure360 Agent Builder</h1>
-  <span class="pill">Build story → scenes → actions → JSON</span>
-  <div class="row" style="margin-left:auto; gap:6px;">
-    <button id="btnImport" class="small">Import JSON</button>
-    <button id="btnExport" class="small">Export JSON</button>
-    <button id="btnReset" class="small danger">Reset</button>
-  </div>
-</header>
-<main>
-  <section class="card">
-    <h2 class="h">Story Concept</h2>
-    <label>Prompt / Premise</label>
-    <textarea id="storyPrompt" placeholder="e.g., A hackathon held in an abandoned floor of an office building results in bananas being found in odd places throughout the space."></textarea>
-    <label>Goal / Win Condition</label>
-    <textarea id="storyGoal" placeholder="e.g., Collect all bananas and unlock the rooftop."></textarea>
-    <label>Global Image Style</label>
-    <textarea id="globalStyle" placeholder="Shared style applied to all prompts."></textarea>
-    <div class="row" style="margin-top:8px;">
-      <div style="flex:1 1 120px;">
-        <label>Asset base</label>
-        <input id="assetBase" placeholder="./assets" />
-      </div>
-      <div style="width:120px;">
-        <label>Ext</label>
-        <select id="imgExt">
-          <option value="jpg">jpg</option>
-          <option value="png">png</option>
-          <option value="webp">webp</option>
-        </select>
-      </div>
+  <header>
+    <h1>Adventure360 Agent Builder</h1>
+    <span class="pill">Build story → scenes → actions → JSON</span>
+    <div class="row" style="margin-left:auto; gap:6px;">
+      <button id="btnImport" class="small">Import JSON</button>
+      <button id="btnExport" class="small">Export JSON</button>
+      <button id="btnReset" class="small danger">Reset</button>
     </div>
-    <div class="row" style="margin-top:10px;">
-      <button id="btnGenerate">Generate with Gemini</button>
-      <button id="btnAddScene">Add Base Scene</button>
-      <button id="btnAddOverlay">Add Overlay</button>
-    </div>
-    <label>Gemini API Key</label>
-    <input id="geminiApiKey" type="password" placeholder="Enter your API key" />
-  </section>
+  </header>
+  <main>
+    <section class="card">
+      <h2 class="h">Story Concept</h2>
+      <label>Prompt / Premise</label>
+      <textarea id="storyPrompt"
+        placeholder="e.g., A hackathon held in an abandoned floor of an office building results in bananas being found in odd places throughout the space."></textarea>
+      <label>Goal / Win Condition</label>
+      <textarea id="storyGoal" placeholder="e.g., Collect all bananas and unlock the rooftop."></textarea>
+      <label>Global Image Style</label>
+      <textarea id="globalStyle" placeholder="Shared style applied to all prompts."></textarea>
+      <div class="note">
+        Orientation rule: East is forward (0°). Describe placement with N/E/S/W relative to that. Overlays are static
+        close-ups; match parent scene style/content.
+      </div>
+      <label>Gemini API Key (stored locally)</label>
+      <input id="geminiKeyInput" type="password" placeholder="Enter Gemini API key">
+      <div class="row" style="margin-top:8px;">
+        <div style="flex:1 1 120px;">
+          <label>Asset base</label>
+          <input id="assetBase" placeholder="./assets" />
+        </div>
+        <div style="width:120px;">
+          <label>Ext</label>
+          <select id="imgExt">
+            <option value="jpg">jpg</option>
+            <option value="png">png</option>
+            <option value="webp">webp</option>
+          </select>
+        </div>
+      </div>
+      <div class="note">
+        Base scene assets: {sceneId}.pano.{ext}. Overlay assets: {sceneId}.png. Keep naming consistent when downloading
+        from Gemini.
+      </div>
+      <div class="row" style="margin-top:10px;">
+        <button id="btnGenerate">Generate with Gemini</button>
+        <button id="btnGenerateAllImages" style="background:#2d4a2f; border-color:#436e46;">Generate All Images</button>
+      </div>
+      <div class="row" style="margin-top:10px;">
+        <button id="btnAddScene">Add Base Scene</button>
+        <button id="btnAddOverlay">Add Overlay</button>
+      </div>
+      <!-- Hidden duplicate input kept for logic compatibility -->
+      <input id="geminiApiKey" type="hidden" />
+    </section>
 
-  <section class="card">
-    <div class="row" style="align-items:center; margin-bottom:6px;">
-      <h2 class="h" style="margin:0;">Scenes</h2>
-      <div class="muted" id="sceneCount"></div>
-      <div class="row" style="margin-left:auto; width:220px;">
-        <label style="margin:0; font-size:12px;">Start Scene</label>
-        <select id="startSelect"></select>
+    <section class="card">
+      <div class="row" style="align-items:center; margin-bottom:6px;">
+        <h2 class="h" style="margin:0;">Scenes</h2>
+        <div class="muted" id="sceneCount"></div>
+        <div class="row" style="margin-left:auto; width:220px;">
+          <label style="margin:0; font-size:12px;">Start Scene</label>
+          <select id="startSelect"></select>
+        </div>
       </div>
-    </div>
-    <div id="sceneList"></div>
-  </section>
-</main>
+      <div id="sceneList"></div>
+    </section>
+  </main>
 
-<!-- Removed type="module" to run as standard script -->
-<script>
-const LS_KEY = "adv360_agent_graph_v1";
-const defaultGlobalStyle = `Equirectangular 360° panorama, ultra coherent series look.
+  <script>
+    const LS_KEY = "adv360_agent_graph_v1";
+    const defaultGlobalStyle = `Equirectangular 360° panorama, ultra coherent series look.
 Photorealistic with subtle filmic grading, consistent lens and color palette.
 Soft moonlit shadows, mild atmospheric haze, physically based lighting.`;
 
-let data = load() || {
-  storyPrompt: "",
-  storyGoal: "",
-  globalStyle: defaultGlobalStyle,
-  assetBase: "./assets",
-  imgExt: "jpg",
-  start: "",
-  scenes: []
-};
-
-function save() { localStorage.setItem(LS_KEY, JSON.stringify(data)); }
-function load() { try { return JSON.parse(localStorage.getItem(LS_KEY)); } catch { return null; } }
-function resetAll() { localStorage.removeItem(LS_KEY); location.reload(); }
-
-const elStoryPrompt = document.getElementById("storyPrompt");
-const elStoryGoal = document.getElementById("storyGoal");
-const elGlobalStyle = document.getElementById("globalStyle");
-const elAssetBase = document.getElementById("assetBase");
-const elImgExt = document.getElementById("imgExt");
-const elSceneList = document.getElementById("sceneList");
-const elSceneCount = document.getElementById("sceneCount");
-const elStartSelect = document.getElementById("startSelect");
-const btnAddScene = document.getElementById("btnAddScene");
-const btnAddOverlay = document.getElementById("btnAddOverlay");
-const btnImport = document.getElementById("btnImport");
-const btnExport = document.getElementById("btnExport");
-const btnReset = document.getElementById("btnReset");
-const btnGenerate = document.getElementById("btnGenerate");
-const elGeminiApiKey = document.getElementById("geminiApiKey");
-
-btnGenerate.addEventListener("click", generateGameGraph);
-
-/**
- * Helper to call Gemini REST API directly via fetch
- */
-async function callGeminiREST(apiKey, model, promptText) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-  
-  const payload = {
-    contents: [{
-      parts: [{ text: promptText }]
-    }]
-  };
-
-  const response = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
-  });
-
-  if (!response.ok) {
-    const err = await response.json();
-    throw new Error(err.error?.message || response.statusText);
-  }
-
-  return await response.json();
-}
-
-// --- 1. GENERATE GAME TEXT/JSON ---
-async function generateGameGraph() {
-  const apiKey = elGeminiApiKey.value;
-  if (!apiKey) { alert("Please enter your Gemini API key."); return; }
-  const storyPrompt = elStoryPrompt.value;
-  const storyGoal = elStoryGoal.value;
-  const globalStyle = elGlobalStyle.value;
-
-  if (!storyPrompt || !storyGoal) { alert("Please provide a story prompt and a goal."); return; }
-
-  btnGenerate.textContent = "Generating...";
-  btnGenerate.disabled = true;
-
-  try {
-    // Use a text-optimized model for logic
-    const modelName = "gemini-1.5-flash"; 
-
-    const prompt = `
-      You are an expert at creating adventure games. Your task is to generate a complete game in JSON format based on the user's story idea.
-      The JSON must follow this structure:
-      - A 'start' property with the ID of the starting scene.
-      - A 'scenes' array, where each scene has:
-        - 'id': a unique kebab-case string.
-        - 'title': a short, descriptive title.
-        - 'description': a longer description of the scene.
-        - 'image_prompt': a prompt for an image generation model, including cardinal directions (East is forward).
-        - 'videoUrl': optional URL for a video.
-        - 'kind': 'base' or 'overlay'.
-        - 'actions': an array of actions the player can take.
-
-      Each action must have:
-      - 'type': 'move', 'look', or 'interact'.
-      - 'cmd': a short, lowercase command.
-      - 'label': a user-friendly label for the action.
-      - 'successor': the ID of the scene to move to (for 'move' and some 'interact' actions).
-      - 'overlayScene': the ID of the overlay scene to show (for 'look' actions).
-      - 'givesItem': the name of an item the player receives (for 'interact' actions).
-      - 'closeOverlayOnSuccess': a boolean to close an overlay after an action.
-
-      Here is the user's request:
-      Story Prompt: ${storyPrompt}
-      Goal: ${storyGoal}
-      Global Image Style: ${globalStyle}
-
-      Generate a complete game with multiple scenes, including at least one overlay scene. Ensure all scenes are reachable and the game is winnable.
-      The output must be only the JSON object, with no other text or markdown.
-    `;
-
-    const result = await callGeminiREST(apiKey, modelName, prompt);
-    
-    // Parse text result
-    const candidates = result.candidates;
-    if (!candidates || !candidates.length) throw new Error("No content generated");
-    
-    const text = candidates[0].content.parts[0].text;
-    // Clean markdown code blocks if present
-    const jsonText = text.replace(/```json|```/g, "").trim();
-    const generatedData = JSON.parse(jsonText);
-
-    data.start = generatedData.start;
-    data.scenes = generatedData.scenes;
-    save();
-    render();
-
-  } catch (error) {
-    console.error("Game Gen Error:", error);
-    alert("Error: " + error.message);
-  } finally {
-    btnGenerate.textContent = "Generate with Gemini";
-    btnGenerate.disabled = false;
-  }
-}
-
-// --- 2. GENERATE IMAGE (One per scene) ---
-async function generateImage(sidx, btnElement) {
-  const apiKey = elGeminiApiKey.value;
-  if (!apiKey) { alert("Please enter your Gemini API key."); return; }
-
-  const scene = data.scenes[sidx];
-  // Combine scene prompt with global style
-  const fullPrompt = `${scene.image_prompt}\n\nStyle Note: ${data.globalStyle}`;
-
-  const originalText = btnElement.textContent;
-  btnElement.textContent = "Generating Image...";
-  btnElement.disabled = true;
-
-  try {
-    // Use the specific image generation model
-    const modelName = "gemini-2.5-flash-image";
-
-    const result = await callGeminiREST(apiKey, modelName, fullPrompt);
-
-    // The image model returns inlineData in the parts array
-    const parts = result.candidates?.[0]?.content?.parts;
-    
-    if (!parts) throw new Error("No parts returned from API");
-
-    // Find the part that contains inlineData (the image)
-    const imagePart = parts.find(p => p.inlineData);
-
-    if (imagePart) {
-      const base64Data = imagePart.inlineData.data;
-      const mimeType = imagePart.inlineData.mimeType || "image/png";
-      
-      // Convert Base64 to Blob
-      const byteCharacters = atob(base64Data);
-      const byteNumbers = new Array(byteCharacters.length);
-      for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i);
-      }
-      const byteArray = new Uint8Array(byteNumbers);
-      const blob = new Blob([byteArray], {type: mimeType});
-
-      // Trigger Download
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${scene.id}.png`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } else {
-      // Fallback if model refused or returned only text
-      const textPart = parts.find(p => p.text);
-      alert(textPart ? "Model Refusal: " + textPart.text : "No image data found.");
+    function defaultData() {
+      return {
+        storyPrompt: "",
+        storyGoal: "",
+        globalStyle: defaultGlobalStyle,
+        assetBase: "./assets",
+        imgExt: "jpg",
+        start: "",
+        scenes: [],
+        geminiKey: ""
+      };
     }
 
-  } catch (error) {
-    console.error("Image Gen Error:", error);
-    alert("Error: " + error.message);
-  } finally {
-    btnElement.textContent = originalText;
-    btnElement.disabled = false;
-  }
-}
+    let data = load() || defaultData();
 
+    function save() { localStorage.setItem(LS_KEY, JSON.stringify(data)); }
+    function load() {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(LS_KEY));
+        if (!parsed) return null;
+        return { ...defaultData(), ...parsed };
+      } catch {
+        return null;
+      }
+    }
+    function resetAll() { localStorage.removeItem(LS_KEY); location.reload(); }
 
-// --- UI LOGIC ---
-function render() {
-  elStoryPrompt.value = data.storyPrompt || "";
-  elStoryGoal.value = data.storyGoal || "";
-  elGlobalStyle.value = data.globalStyle || defaultGlobalStyle;
-  elAssetBase.value = data.assetBase || "";
-  elImgExt.value = data.imgExt || "jpg";
-  renderScenes();
-  renderStart();
-}
+    const elStoryPrompt = document.getElementById("storyPrompt");
+    const elStoryGoal = document.getElementById("storyGoal");
+    const elGlobalStyle = document.getElementById("globalStyle");
+    const elAssetBase = document.getElementById("assetBase");
+    const elImgExt = document.getElementById("imgExt");
+    const elGeminiKeyInput = document.getElementById("geminiKeyInput");
+    const elGeminiApiKey = document.getElementById("geminiApiKey"); // hidden syncing input
+    const elSceneList = document.getElementById("sceneList");
+    const elSceneCount = document.getElementById("sceneCount");
+    const elStartSelect = document.getElementById("startSelect");
+    const btnAddScene = document.getElementById("btnAddScene");
+    const btnAddOverlay = document.getElementById("btnAddOverlay");
+    const btnImport = document.getElementById("btnImport");
+    const btnExport = document.getElementById("btnExport");
+    const btnReset = document.getElementById("btnReset");
+    const btnGenerate = document.getElementById("btnGenerate");
+    const btnGenerateAllImages = document.getElementById("btnGenerateAllImages");
 
-function renderStart() {
-  elStartSelect.innerHTML = "";
-  data.scenes.filter(s => s.kind !== "overlay").forEach(s => {
-    const opt = document.createElement("option");
-    opt.value = s.id; opt.textContent = s.id;
-    elStartSelect.appendChild(opt);
-  });
-  if (data.start) elStartSelect.value = data.start;
-}
+    btnGenerate.addEventListener("click", generateGameGraph);
+    btnGenerateAllImages.addEventListener("click", generateAllImages);
 
-function renderScenes() {
-  elSceneList.innerHTML = "";
-  elSceneCount.textContent = `${data.scenes.length} scenes`;
-  data.scenes.forEach((s, idx) => {
-    const div = document.createElement("div");
-    div.className = "scene";
-    div.innerHTML = `
-      <div class="row" style="align-items:center; gap:6px;">
+    // Build a model-ready prompt that respects base vs overlay rendering rules.
+    // Build a model-ready prompt that respects base vs overlay rendering rules.
+    function buildImagePrompt(scene) {
+      const sharedStyle = data.globalStyle || defaultGlobalStyle;
+
+      if (scene.kind === "overlay") {
+        // Overlay: Flat 2D image
+        return [
+          "Medium: Flat 2D close-up image (NOT a panorama).",
+          `Subject: ${scene.image_prompt || "A detailed close-up view."}`,
+          "Context: This is a specific detail derived from the parent environment.",
+          "Style & Atmosphere:",
+          sharedStyle,
+          "Constraint: Do not use fisheye or spherical distortion. Keep lines straight and perspective natural for a close-up."
+        ].join("\n");
+      } else {
+        // Base: 360 Panorama
+        return [
+          "Medium: Equirectangular 360° panorama (2:1 aspect ratio).",
+          "Orientation: East is forward (center of image).",
+          `Scene Description: ${scene.image_prompt || "A surrounding environment."}`,
+          "Style & Atmosphere:",
+          sharedStyle,
+          "Constraint: Seamless 360 degree view, high resolution, consistent lighting."
+        ].join("\n");
+      }
+    }
+
+    /**
+     * Helper to call Gemini REST API via fetch.
+     * FIX: Removed "thinkingConfig" which caused the Invalid JSON payload error.
+     */
+    async function callGeminiREST(apiKey, model, promptText) {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+      const payload = {
+        contents: [{
+          role: "user",
+          parts: [{ text: promptText }]
+        }]
+        // thinkingConfig removed as it is not supported in the standard generateContent schema for 3-pro-preview
+      };
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error?.message || response.statusText);
+      }
+
+      return await response.json();
+    }
+
+    // --- 1. GENERATE GAME TEXT/JSON ---
+    async function generateGameGraph() {
+      const apiKey = (elGeminiKeyInput.value || data.geminiKey || "").trim();
+      if (!apiKey) { alert("Please enter your Gemini API key."); return; }
+      const storyPrompt = elStoryPrompt.value;
+      const storyGoal = elStoryGoal.value;
+      const globalStyle = elGlobalStyle.value;
+
+      if (!storyPrompt || !storyGoal) { alert("Please provide a story prompt and a goal."); return; }
+
+      btnGenerate.textContent = "Generating...";
+      btnGenerate.disabled = true;
+
+      try {
+        // gemini-1.5-flash is excellent and fast for JSON generation
+        const modelName = "gemini-3-pro-preview";
+
+        const prompt = `
+      You are an expert at creating Adventure360 games. Build a coherent, winnable story that follows the schema from Scenes.MD, Actions.MD, and State.MD.
+      
+      **Core Objective:**
+      Create a "Choose Your Own Adventure" style game based on the user's premise and goal. The player must be able to navigate through scenes, interact with objects, and eventually achieve the win condition.
+
+      **User Request:**
+      - **Story Premise:** ${storyPrompt}
+      - **Win Condition:** ${storyGoal}
+      - **Global Visual Style:** ${globalStyle}
+
+      **Strict Schema Requirements:**
+      1.  **Output Format:** A single JSON object with \`{ start: "scene-id", scenes: [...] }\`. No markdown formatting.
+      2.  **Scene Types:**
+          -   **Base Scene (\`kind: "base"\`)**: An equirectangular 360° panorama. These are the main rooms or locations.
+          -   **Overlay Scene (\`kind: "overlay"\`)**: A flat 2D close-up image. These are for examining objects, puzzles, or specific details.
+          -   **Depth Limit:** Do not nest overlays deeper than 3 levels (Base -> Overlay -> Overlay -> Overlay).
+      3.  **Scene Properties:**
+          -   \`id\`: Unique kebab-case string (e.g., "kitchen", "old-desk").
+          -   \`title\`: Short, readable title.
+          -   \`description\`: Narrative text describing the scene to the player.
+          -   \`image_prompt\`: A detailed visual description for image generation.
+              -   For **Base**: Must describe a 360° environment. "East is forward". Mention cardinal directions for key objects.
+              -   For **Overlay**: Must describe a specific 2D view of an object or area.
+          -   \`kind\`: "base" or "overlay".
+          -   \`actions\`: Array of action objects.
+      4.  **Action Properties:**
+          -   \`type\`: "move", "look", or "interact".
+          -   \`cmd\`: Unique lowercase command string (e.g., "north", "look desk").
+          -   \`label\`: Button text (e.g., "Go North", "Inspect Desk").
+          -   \`successor\`: (Required for "move") The \`id\` of the destination scene.
+          -   \`overlayScene\`: (Required for "look" if opening an overlay) The \`id\` of the overlay scene.
+          -   \`givesItem\`: (Optional for "interact") String ID of an item added to inventory.
+          -   \`closeOverlayOnSuccess\`: (Boolean) True if the action closes the current overlay (e.g., "Leave", "Back").
+      
+      **Game Logic & Consistency Rules:**
+      -   **Navigation:** Base scenes must be connected via "move" actions. Use compass directions (north, south, east, west) where appropriate.
+      -   **Interaction:** "look" actions should generally open "overlay" scenes for closer inspection.
+      -   **Win Condition:** There MUST be a clear path to the win condition. This usually involves finding an item, solving a puzzle, or reaching a specific location that triggers a final narrative description.
+      -   **Escaping Overlays:** Every overlay scene MUST have at least one action to leave it (e.g., "Back", "Close") or move forward.
+      -   **Visual Consistency:** All \`image_prompt\` fields must align with the provided **Global Visual Style**.
+
+      **Example Output Structure:**
+      {
+        "start": "entry-hall",
+        "scenes": [
+          {
+            "id": "entry-hall",
+            "kind": "base",
+            "title": "Entry Hall",
+            "description": "You stand in a grand, dusty hall. To the North is a heavy door.",
+            "image_prompt": "Grand entry hall, dusty, victorian style. Heavy door to the North. East is forward.",
+            "actions": [
+              { "type": "move", "cmd": "north", "label": "Go North", "successor": "library" }
+            ]
+          },
+          {
+             "id": "library",
+             ...
+          }
+        ]
+      }
+
+      Generate the complete JSON now.
+    `;
+
+        const result = await callGeminiREST(apiKey, modelName, prompt);
+
+        const candidates = result.candidates;
+        if (!candidates || !candidates.length) throw new Error("No content generated");
+
+        const text = candidates[0].content.parts[0].text;
+        const jsonText = text.replace(/```json|```/g, "").trim();
+        const generatedData = JSON.parse(jsonText);
+
+        data.start = generatedData.start;
+        data.scenes = generatedData.scenes;
+        save();
+        render();
+
+      } catch (error) {
+        console.error("Game Gen Error:", error);
+        alert("Error: " + error.message);
+      } finally {
+        btnGenerate.textContent = "Generate with Gemini";
+        btnGenerate.disabled = false;
+      }
+    }
+
+    // --- 2. GENERATE IMAGE (One per scene) ---
+    async function generateImage(sidx, btnElement) {
+      const apiKey = (elGeminiKeyInput.value || data.geminiKey || "").trim();
+      if (!apiKey) { alert("Please enter your Gemini API key."); return; }
+
+      const scene = data.scenes[sidx];
+      const fullPrompt = buildImagePrompt(scene);
+
+      const originalText = btnElement.textContent;
+      btnElement.textContent = "Generating Image...";
+      btnElement.disabled = true;
+
+      try {
+        // Using gemini-2.0-flash-exp as it is currently a reliable image model in v1beta
+        // Alternatively: "gemini-3-pro-preview" if you have access
+        const modelName = "gemini-2.5-flash-image";
+
+        const result = await callGeminiREST(apiKey, modelName, fullPrompt);
+
+        const parts = result.candidates?.[0]?.content?.parts;
+        if (!parts) throw new Error("No parts returned from API");
+
+        const imagePart = parts.find(p => p.inlineData);
+
+        if (imagePart) {
+          const base64Data = imagePart.inlineData.data;
+          const mimeType = imagePart.inlineData.mimeType || "image/png";
+          const ext = scene.kind === "overlay" ? "png" : (data.imgExt || "jpg");
+          const filename = scene.kind === "overlay" ? `${scene.id}.png` : `${scene.id}.pano.${ext}`;
+
+          const byteCharacters = atob(base64Data);
+          const byteNumbers = new Array(byteCharacters.length);
+          for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+          }
+          const byteArray = new Uint8Array(byteNumbers);
+          const blob = new Blob([byteArray], { type: mimeType });
+
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        } else {
+          const textPart = parts.find(p => p.text);
+          alert(textPart ? "Model Refusal: " + textPart.text : "No image data found.");
+        }
+
+      } catch (error) {
+        console.error("Image Gen Error:", error);
+        alert("Error: " + error.message);
+      } finally {
+        btnElement.textContent = originalText;
+        btnElement.disabled = false;
+      }
+    }
+
+    async function generateAllImages() {
+      const apiKey = (elGeminiKeyInput.value || data.geminiKey || "").trim();
+      if (!apiKey) { alert("Please enter your Gemini API key."); return; }
+
+      btnGenerateAllImages.textContent = "Generating All...";
+      btnGenerateAllImages.disabled = true;
+
+      try {
+        for (let i = 0; i < data.scenes.length; i++) {
+          const scene = data.scenes[i];
+          const btn = document.querySelector(`[data-sidx="${i}"][data-action="generateImage"]`);
+          if (btn) {
+            await generateImage(i, btn);
+            // Small delay to avoid hitting API rate limits too hard
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+        }
+        alert("All images generation attempted. Check downloads.");
+      } catch (error) {
+        console.error("Generate All Images Error:", error);
+        alert("Error generating all images: " + error.message);
+      } finally {
+        btnGenerateAllImages.textContent = "Generate All Images";
+        btnGenerateAllImages.disabled = false;
+      }
+    }
+
+    // --- UI LOGIC ---
+    function render() {
+      elStoryPrompt.value = data.storyPrompt || "";
+      elStoryGoal.value = data.storyGoal || "";
+      elGlobalStyle.value = data.globalStyle || defaultGlobalStyle;
+      elAssetBase.value = data.assetBase || "";
+      elImgExt.value = data.imgExt || "jpg";
+      elGeminiKeyInput.value = data.geminiKey || "";
+      renderScenes();
+      renderStart();
+    }
+
+    function renderStart() {
+      elStartSelect.innerHTML = "";
+      data.scenes.filter(s => s.kind !== "overlay").forEach(s => {
+        const opt = document.createElement("option");
+        opt.value = s.id; opt.textContent = s.id;
+        elStartSelect.appendChild(opt);
+      });
+      if (data.start) elStartSelect.value = data.start;
+    }
+
+    function renderScenes() {
+      elSceneList.innerHTML = "";
+      elSceneCount.textContent = `${data.scenes.length} scenes`;
+
+      // Helper to render a single scene card (base or overlay)
+      const renderCard = (s, idx, isOverlay = false) => {
+        const div = document.createElement("div");
+        div.className = isOverlay ? "overlay-card" : "scene-card";
+        div.innerHTML = `
+      ${isOverlay ? `<div class="overlay-label">Overlay for ${s.parentScene || "?"}</div>` : ""}
+      <div class="scene-header">
         <div class="tag">${s.kind || "base"}</div>
-        <input value="${s.id || ""}" placeholder="id (kebab)" data-field="id">
-        <input value="${s.title || ""}" placeholder="title" data-field="title">
-        <button class="small danger" data-action="del">Delete</button>
+        <input value="${s.id || ""}" placeholder="id (kebab)" data-field="id" style="font-weight:bold; width:200px;">
+        <input value="${s.title || ""}" placeholder="title" data-field="title" style="flex:1;">
+        <button class="small danger" data-action="del" style="width:auto;">Delete</button>
       </div>
+      ${s.kind === "overlay" ? `
+      <div class="row" style="gap:6px; margin-bottom:8px;">
+        <input value="${s.parentScene || ""}" placeholder="parent scene id (base)" data-field="parentScene">
+        <label class="muted" style="margin:0;">Overlay images are static close-ups.</label>
+      </div>
+      ` : ""}
       <label>Description</label>
       <textarea data-field="description">${s.description || ""}</textarea>
-      <div class="row" style="gap:6px;">
+      <div class="row" style="gap:6px; margin-top:8px;">
         <div style="flex:1;">
           <label>Video URL (.mp4 optional)</label>
           <input value="${s.videoUrl || ""}" data-field="videoUrl">
         </div>
         <div style="flex:1;">
-          <label>Image Prompt (compass-aligned)</label>
+          <label>Image Prompt (${isOverlay ? "Flat 2D" : "360° East-Forward"})</label>
           <textarea data-field="image_prompt">${s.image_prompt || ""}</textarea>
         </div>
       </div>
-      <div class="row" style="gap:6px; align-items:center; margin-top:6px;">
-        <button class="small" data-action="generateImage">Generate Image</button>
+      <div class="row" style="gap:6px; align-items:center; margin-top:8px; padding-top:8px; border-top:1px solid #1e2733;">
+        <button class="small" data-action="generateImage" data-sidx="${idx}">Generate Image</button>
         <button class="small" data-action="addAction">Add Action</button>
-        <span class="muted">Actions (${(s.actions||[]).length})</span>
+        ${!isOverlay ? `<button class="small" data-action="addOverlayChild">Add Overlay</button>` : ""}
+        <span class="muted" style="margin-left:auto; font-size:12px;">Actions: ${(s.actions || []).length}</span>
       </div>
-      <div class="actions" data-actions></div>
+      <div class="actions" data-actions style="margin-top:8px;"></div>
+      ${!isOverlay ? `<div class="overlays-container" data-overlays></div>` : ""}
     `;
-    const actContainer = div.querySelector("[data-actions]");
-    (s.actions || []).forEach((a, aidx) => {
-      const ar = document.createElement("div");
-      ar.className = "action-row";
-      ar.innerHTML = `
+
+        // Render Actions
+        const actContainer = div.querySelector("[data-actions]");
+        (s.actions || []).forEach((a, aidx) => {
+          const ar = document.createElement("div");
+          ar.className = "action-row";
+          ar.innerHTML = `
         <div class="row" style="gap:6px; align-items:center;">
           <select data-afield="type" style="width:110px;">
             <option value="move">move</option>
@@ -358,128 +672,203 @@ function renderScenes() {
           <button class="small danger" data-action="delAction">✕</button>
         </div>
         <div class="row" style="gap:6px; margin-top:4px;">
-          <input data-afield="successor" placeholder="successor (move/interact)" value="${a.successor || ""}">
-          <input data-afield="overlayScene" placeholder="overlay scene (look)" value="${a.overlayScene || ""}">
-          <input data-afield="givesItem" placeholder="gives item (interact)" value="${a.givesItem || ""}">
+          <input data-afield="successor" placeholder="successor" value="${a.successor || ""}">
+          <input data-afield="overlayScene" placeholder="overlay scene" value="${a.overlayScene || ""}">
+          <input data-afield="givesItem" placeholder="gives item" value="${a.givesItem || ""}">
           <label style="display:flex;align-items:center;gap:4px;font-size:12px;">
-            <input type="checkbox" data-afield="closeOverlayOnSuccess" ${a.closeOverlayOnSuccess ? "checked":""}> close overlay
+            <input type="checkbox" data-afield="closeOverlayOnSuccess" ${a.closeOverlayOnSuccess ? "checked" : ""}> close overlay
           </label>
         </div>
       `;
-      ar.querySelector('[data-afield="type"]').value = a.type || "move";
-      ar.querySelectorAll("[data-afield]").forEach(inp => {
-        inp.addEventListener("change", () => {
-          applyActionEdit(idx, aidx, ar);
+          ar.querySelector('[data-afield="type"]').value = a.type || "move";
+          ar.querySelectorAll("[data-afield]").forEach(inp => {
+            inp.addEventListener("change", () => { applyActionEdit(idx, aidx, ar); });
+          });
+          ar.querySelector('[data-action="delAction"]').addEventListener("click", () => {
+            s.actions.splice(aidx, 1); save(); renderScenes();
+          });
+          actContainer.appendChild(ar);
         });
+
+        // Event Listeners
+        div.querySelectorAll("[data-field]").forEach(inp => {
+          inp.addEventListener("blur", () => { applySceneEdit(idx, div); });
+          inp.addEventListener("change", () => { applySceneEdit(idx, div); });
+        });
+        div.querySelector('[data-action="del"]').addEventListener("click", () => {
+          if (confirm(`Delete scene ${s.id}?`)) {
+            data.scenes.splice(idx, 1);
+            if (data.start === s.id) data.start = data.scenes.find(sc => sc.kind !== "overlay")?.id || "";
+            save(); render();
+          }
+        });
+        div.querySelector('[data-action="addAction"]').addEventListener("click", () => {
+          s.actions = s.actions || [];
+          s.actions.push({ type: "move", cmd: "", label: "", successor: "", overlayScene: "", givesItem: "", closeOverlayOnSuccess: false });
+          save(); renderScenes();
+        });
+        div.querySelector('[data-action="generateImage"]').addEventListener("click", (e) => {
+          generateImage(idx, e.target);
+        });
+
+        if (!isOverlay) {
+          div.querySelector('[data-action="addOverlayChild"]').addEventListener("click", () => {
+            const nid = prompt("New overlay id (kebab-case)", `${s.id}-detail`);
+            if (!nid) return;
+            if (data.scenes.find(x => x.id === nid)) { alert("ID exists"); return; }
+            const newOverlay = {
+              id: nid,
+              title: `Close-up: ${nid}`,
+              description: "Overlay detail.",
+              image_prompt: "Close-up detail.",
+              videoUrl: "",
+              kind: "overlay",
+              parentScene: s.id,
+              actions: []
+            };
+            data.scenes.push(newOverlay);
+            // Auto-link action
+            s.actions = s.actions || [];
+            s.actions.push({ type: "look", cmd: `look ${nid.replace(s.id + '-', '').replace(/-/g, ' ')}`, label: `Look`, overlayScene: nid });
+            save(); renderScenes();
+          });
+        }
+
+        return div;
+      };
+
+      // 1. Identify Base Scenes and Orphans
+      const baseScenes = [];
+      const orphans = [];
+      const overlayMap = new Map(); // parentId -> [indices]
+
+      data.scenes.forEach((s, idx) => {
+        if (s.kind === "overlay") {
+          if (s.parentScene) {
+            if (!overlayMap.has(s.parentScene)) overlayMap.set(s.parentScene, []);
+            overlayMap.get(s.parentScene).push(idx);
+          } else {
+            orphans.push(idx);
+          }
+        } else {
+          baseScenes.push(idx);
+        }
       });
-      ar.querySelector('[data-action="delAction"]').addEventListener("click", () => {
-        s.actions.splice(aidx,1); save(); renderScenes();
+
+      // 2. Render Base Scenes + Children
+      baseScenes.forEach(baseIdx => {
+        const s = data.scenes[baseIdx];
+        const card = renderCard(s, baseIdx, false);
+        const overlayContainer = card.querySelector("[data-overlays]");
+
+        const childIndices = overlayMap.get(s.id) || [];
+        childIndices.forEach(childIdx => {
+          const childS = data.scenes[childIdx];
+          const childCard = renderCard(childS, childIdx, true);
+          overlayContainer.appendChild(childCard);
+        });
+
+        elSceneList.appendChild(card);
       });
-      actContainer.appendChild(ar);
-    });
-    // Scene field edits
-    div.querySelectorAll("[data-field]").forEach(inp => {
-      inp.addEventListener("blur", () => { applySceneEdit(idx, div); });
-      inp.addEventListener("change", () => { applySceneEdit(idx, div); });
-    });
-    div.querySelector('[data-action="del"]').addEventListener("click", () => {
-      data.scenes.splice(idx,1);
-      if (data.start === s.id) data.start = data.scenes.find(sc => sc.kind!=="overlay")?.id || "";
+
+      // 3. Render Orphans (if any)
+      if (orphans.length > 0) {
+        const orphanHeader = document.createElement("div");
+        orphanHeader.className = "h muted";
+        orphanHeader.textContent = "Unlinked Overlays";
+        orphanHeader.style.marginTop = "20px";
+        elSceneList.appendChild(orphanHeader);
+
+        orphans.forEach(idx => {
+          const s = data.scenes[idx];
+          elSceneList.appendChild(renderCard(s, idx, true));
+        });
+      }
+    }
+
+    function applySceneEdit(idx, container) {
+      const s = data.scenes[idx];
+      const map = {};
+      container.querySelectorAll("[data-field]").forEach(inp => {
+        map[inp.dataset.field] = inp.value;
+      });
+      s.id = map.id.trim();
+      s.title = map.title;
+      s.description = map.description;
+      s.videoUrl = map.videoUrl;
+      s.image_prompt = map.image_prompt;
+      if (s.kind === "overlay") s.parentScene = map.parentScene;
+      save(); renderStart();
+    }
+
+    function applyActionEdit(sidx, aidx, container) {
+      const a = data.scenes[sidx].actions[aidx];
+      container.querySelectorAll("[data-afield]").forEach(inp => {
+        const key = inp.dataset.afield;
+        if (inp.type === "checkbox") a[key] = inp.checked;
+        else a[key] = inp.value;
+      });
+      a.cmd = (a.cmd || "").trim().toLowerCase();
+      a.type = (a.type || "move").toLowerCase();
+      save();
+    }
+
+    btnAddScene.addEventListener("click", () => {
+      const nid = prompt("New base scene id (kebab-case)", "new-scene");
+      if (!nid) return;
+      if (data.scenes.find(s => s.id === nid)) { alert("ID exists"); return; }
+      const scene = { id: nid, title: nid, description: "", image_prompt: "", videoUrl: "", kind: "base", actions: [] };
+      data.scenes.push(scene);
+      if (!data.start) data.start = nid;
       save(); render();
     });
-    div.querySelector('[data-action="addAction"]').addEventListener("click", () => {
-      s.actions = s.actions || [];
-      s.actions.push({ type:"move", cmd:"", label:"", successor:"", overlayScene:"", givesItem:"", closeOverlayOnSuccess:false });
-      save(); renderScenes();
+
+    btnAddOverlay.addEventListener("click", () => {
+      const nid = prompt("New overlay id (kebab-case)", "scene-overlay");
+      if (!nid) return;
+      if (data.scenes.find(s => s.id === nid)) { alert("ID exists"); return; }
+      const scene = { id: nid, title: `Close-up: ${nid}`, description: "Overlay detail.", image_prompt: "Close-up detail.", videoUrl: "", kind: "overlay", parentScene: "", actions: [] };
+      data.scenes.push(scene);
+      save(); render();
     });
-    // Bind Image Generation
-    div.querySelector('[data-action="generateImage"]').addEventListener("click", (e) => {
-      generateImage(idx, e.target);
+
+    elStoryPrompt.addEventListener("input", () => { data.storyPrompt = elStoryPrompt.value; save(); });
+    elStoryGoal.addEventListener("input", () => { data.storyGoal = elStoryGoal.value; save(); });
+    elGlobalStyle.addEventListener("input", () => { data.globalStyle = elGlobalStyle.value; save(); });
+    elAssetBase.addEventListener("input", () => { data.assetBase = elAssetBase.value; save(); });
+    elImgExt.addEventListener("change", () => { data.imgExt = elImgExt.value; save(); });
+    elStartSelect.addEventListener("change", () => { data.start = elStartSelect.value; save(); });
+    elGeminiKeyInput.addEventListener("change", () => { data.geminiKey = elGeminiKeyInput.value.trim(); save(); });
+
+    btnReset.addEventListener("click", () => { if (confirm("Reset builder data?")) resetAll(); });
+
+    btnExport.addEventListener("click", () => {
+      const exportObj = {
+        start: data.start || (data.scenes.find(s => s.kind !== "overlay")?.id || ""),
+        scenes: data.scenes
+      };
+      const blob = new Blob([JSON.stringify(exportObj, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = "adventure-graph.json";
+      a.click();
+      URL.revokeObjectURL(url);
     });
-    elSceneList.appendChild(div);
-  });
-}
 
-function applySceneEdit(idx, container) {
-  const s = data.scenes[idx];
-  const map = {};
-  container.querySelectorAll("[data-field]").forEach(inp => {
-    map[inp.dataset.field] = inp.value;
-  });
-  s.id = map.id.trim();
-  s.title = map.title;
-  s.description = map.description;
-  s.videoUrl = map.videoUrl;
-  s.image_prompt = map.image_prompt;
-  save(); renderStart();
-}
+    btnImport.addEventListener("click", () => {
+      const t = prompt("Paste JSON graph (start + scenes)");
+      if (!t) return;
+      try {
+        const obj = JSON.parse(t);
+        if (!obj.scenes || !Array.isArray(obj.scenes)) throw new Error("Missing scenes array");
+        data.scenes = obj.scenes;
+        data.start = obj.start || "";
+        save(); render();
+      } catch (e) { alert("Import failed: " + e.message); }
+    });
 
-function applyActionEdit(sidx, aidx, container) {
-  const a = data.scenes[sidx].actions[aidx];
-  container.querySelectorAll("[data-afield]").forEach(inp => {
-    const key = inp.dataset.afield;
-    if (inp.type === "checkbox") a[key] = inp.checked;
-    else a[key] = inp.value;
-  });
-  a.cmd = (a.cmd || "").trim().toLowerCase();
-  a.type = (a.type || "move").toLowerCase();
-  save();
-}
-
-btnAddScene.addEventListener("click", () => {
-  const nid = prompt("New base scene id (kebab-case)", "new-scene");
-  if (!nid) return;
-  if (data.scenes.find(s => s.id === nid)) { alert("ID exists"); return; }
-  const scene = { id:nid, title:nid, description:"", image_prompt:"", videoUrl:"", kind:"base", actions:[] };
-  data.scenes.push(scene);
-  if (!data.start) data.start = nid;
-  save(); render();
-});
-
-btnAddOverlay.addEventListener("click", () => {
-  const nid = prompt("New overlay id (kebab-case)", "scene-overlay");
-  if (!nid) return;
-  if (data.scenes.find(s => s.id === nid)) { alert("ID exists"); return; }
-  const scene = { id:nid, title:`Close-up: ${nid}`, description:"Overlay detail.", image_prompt:"Close-up detail.", videoUrl:"", kind:"overlay", actions:[] };
-  data.scenes.push(scene);
-  save(); render();
-});
-
-elStoryPrompt.addEventListener("input", () => { data.storyPrompt = elStoryPrompt.value; save(); });
-elStoryGoal.addEventListener("input", () => { data.storyGoal = elStoryGoal.value; save(); });
-elGlobalStyle.addEventListener("input", () => { data.globalStyle = elGlobalStyle.value; save(); });
-elAssetBase.addEventListener("input", () => { data.assetBase = elAssetBase.value; save(); });
-elImgExt.addEventListener("change", () => { data.imgExt = elImgExt.value; save(); });
-elStartSelect.addEventListener("change", () => { data.start = elStartSelect.value; save(); });
-
-btnReset.addEventListener("click", () => { if (confirm("Reset builder data?")) resetAll(); });
-
-btnExport.addEventListener("click", () => {
-  const exportObj = {
-    start: data.start || (data.scenes.find(s=>s.kind!=="overlay")?.id || ""),
-    scenes: data.scenes
-  };
-  const blob = new Blob([JSON.stringify(exportObj, null, 2)], {type:"application/json"});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url; a.download = "adventure-graph.json";
-  a.click();
-  URL.revokeObjectURL(url);
-});
-
-btnImport.addEventListener("click", () => {
-  const t = prompt("Paste JSON graph (start + scenes)");
-  if (!t) return;
-  try {
-    const obj = JSON.parse(t);
-    if (!obj.scenes || !Array.isArray(obj.scenes)) throw new Error("Missing scenes array");
-    data.scenes = obj.scenes;
-    data.start = obj.start || "";
-    save(); render();
-  } catch(e) { alert("Import failed: " + e.message); }
-});
-
-render();
-</script>
+    render();
+  </script>
 </body>
+
 </html>
