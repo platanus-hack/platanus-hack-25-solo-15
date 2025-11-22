@@ -565,7 +565,10 @@
             });
 
             if (actions.length > 0) {
-                const menu = actions.map(a => `• ${a.cmd}`).join("\n");
+                const menu = actions.map(a => {
+                    if (a.type === "move" && a.successor) return `• go to ${a.successor}`;
+                    return `• ${a.cmd}`;
+                }).join("\n");
                 logText(`Available Actions:\n${menu}`, "menu");
             }
 
@@ -663,7 +666,13 @@
                     return;
                 }
 
-                const action = (scene.actions || []).find(a => a.cmd === cmd);
+                let action = (scene.actions || []).find(a => a.cmd === cmd);
+
+                // Support "go to [successor]" syntax
+                if (!action && cmd.startsWith("go to ")) {
+                    const targetId = cmd.replace("go to ", "").trim();
+                    action = (scene.actions || []).find(a => a.type === "move" && a.successor === targetId);
+                }
 
                 if (action) {
                     // Check visibility constraints
