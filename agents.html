@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Adventure360 Agent Builder</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root { --bg:#0d1016; --card:#121722; --fg:#eef2f8; --muted:#9aa5b8; --line:#1e2733; --accent:#4e8ef7; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; background:var(--bg); color:var(--fg); }
+  header { padding:14px 16px; border-bottom:1px solid var(--line); display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  h1 { margin:0; font-size:18px; }
+  main { display:grid; grid-template-columns: 320px 1fr; gap:12px; padding:12px 16px 24px; }
+  @media (max-width:1000px) { main { grid-template-columns:1fr; } }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:12px; }
+  .h { font-size:15px; font-weight:700; margin:0 0 8px; }
+  label { display:block; margin:6px 0 4px; color:var(--muted); font-size:13px; }
+  input, textarea, select, button { width:100%; border-radius:8px; border:1px solid var(--line); background:#151b26; color:var(--fg); padding:8px 10px; font-size:14px; }
+  textarea { min-height:90px; resize:vertical; }
+  button { cursor:pointer; }
+  button:hover { border-color:#2a3a52; }
+  .row { display:flex; gap:8px; flex-wrap:wrap; }
+  .pill { display:inline-block; padding:4px 10px; border-radius:20px; background:#151b26; border:1px solid var(--line); font-size:12px; color:var(--muted); }
+  .scene { border:1px solid var(--line); border-radius:10px; padding:10px; margin-bottom:10px; background:#0f131d; }
+  .actions { display:grid; gap:6px; }
+  .action-row { border:1px solid var(--line); border-radius:8px; padding:8px; background:#0f141e; }
+  .muted { color:var(--muted); }
+  .tag { display:inline-block; padding:2px 6px; border-radius:6px; border:1px solid var(--line); font-size:11px; color:#c8d5e8; }
+  .danger { background:#29141a; border-color:#4b1e28; }
+  .small { width:auto; padding:6px 10px; }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Adventure360 Agent Builder</h1>
+  <span class="pill">Build story → scenes → actions → JSON</span>
+  <div class="row" style="margin-left:auto; gap:6px;">
+    <button id="btnImport" class="small">Import JSON</button>
+    <button id="btnExport" class="small">Export JSON</button>
+    <button id="btnReset" class="small danger">Reset</button>
+  </div>
+</header>
+<main>
+  <section class="card">
+    <h2 class="h">Story Concept</h2>
+    <label>Prompt / Premise</label>
+    <textarea id="storyPrompt" placeholder="e.g., A hackathon held in an abandoned floor of an office building results in bananas being found in odd places throughout the space."></textarea>
+    <label>Goal / Win Condition</label>
+    <textarea id="storyGoal" placeholder="e.g., Collect all bananas and unlock the rooftop."></textarea>
+    <label>Global Image Style</label>
+    <textarea id="globalStyle" placeholder="Shared style applied to all prompts."></textarea>
+    <div class="row" style="margin-top:8px;">
+      <div style="flex:1 1 120px;">
+        <label>Asset base</label>
+        <input id="assetBase" placeholder="./assets" />
+      </div>
+      <div style="width:120px;">
+        <label>Ext</label>
+        <select id="imgExt">
+          <option value="jpg">jpg</option>
+          <option value="png">png</option>
+          <option value="webp">webp</option>
+        </select>
+      </div>
+    </div>
+    <div class="row" style="margin-top:10px;">
+      <button id="btnGenerate">Generate with Gemini</button>
+      <button id="btnAddScene">Add Base Scene</button>
+      <button id="btnAddOverlay">Add Overlay</button>
+    </div>
+    <label>Gemini API Key</label>
+    <input id="geminiApiKey" type="password" placeholder="Enter your API key" />
+  </section>
+
+  <section class="card">
+    <div class="row" style="align-items:center; margin-bottom:6px;">
+      <h2 class="h" style="margin:0;">Scenes</h2>
+      <div class="muted" id="sceneCount"></div>
+      <div class="row" style="margin-left:auto; width:220px;">
+        <label style="margin:0; font-size:12px;">Start Scene</label>
+        <select id="startSelect"></select>
+      </div>
+    </div>
+    <div id="sceneList"></div>
+  </section>
+</main>
+
+<!-- Removed type="module" to run as standard script -->
+<script>
+const LS_KEY = "adv360_agent_graph_v1";
+const defaultGlobalStyle = `Equirectangular 360° panorama, ultra coherent series look.
+Photorealistic with subtle filmic grading, consistent lens and color palette.
+Soft moonlit shadows, mild atmospheric haze, physically based lighting.`;
+
+let data = load() || {
+  storyPrompt: "",
+  storyGoal: "",
+  globalStyle: defaultGlobalStyle,
+  assetBase: "./assets",
+  imgExt: "jpg",
+  start: "",
+  scenes: []
+};
+
+function save() { localStorage.setItem(LS_KEY, JSON.stringify(data)); }
+function load() { try { return JSON.parse(localStorage.getItem(LS_KEY)); } catch { return null; } }
+function resetAll() { localStorage.removeItem(LS_KEY); location.reload(); }
+
+const elStoryPrompt = document.getElementById("storyPrompt");
+const elStoryGoal = document.getElementById("storyGoal");
+const elGlobalStyle = document.getElementById("globalStyle");
+const elAssetBase = document.getElementById("assetBase");
+const elImgExt = document.getElementById("imgExt");
+const elSceneList = document.getElementById("sceneList");
+const elSceneCount = document.getElementById("sceneCount");
+const elStartSelect = document.getElementById("startSelect");
+const btnAddScene = document.getElementById("btnAddScene");
+const btnAddOverlay = document.getElementById("btnAddOverlay");
+const btnImport = document.getElementById("btnImport");
+const btnExport = document.getElementById("btnExport");
+const btnReset = document.getElementById("btnReset");
+const btnGenerate = document.getElementById("btnGenerate");
+const elGeminiApiKey = document.getElementById("geminiApiKey");
+
+btnGenerate.addEventListener("click", generateGameGraph);
+
+/**
+ * Helper to call Gemini REST API directly via fetch
+ */
+async function callGeminiREST(apiKey, model, promptText) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+  
+  const payload = {
+    contents: [{
+      parts: [{ text: promptText }]
+    }]
+  };
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(err.error?.message || response.statusText);
+  }
+
+  return await response.json();
+}
+
+// --- 1. GENERATE GAME TEXT/JSON ---
+async function generateGameGraph() {
+  const apiKey = elGeminiApiKey.value;
+  if (!apiKey) { alert("Please enter your Gemini API key."); return; }
+  const storyPrompt = elStoryPrompt.value;
+  const storyGoal = elStoryGoal.value;
+  const globalStyle = elGlobalStyle.value;
+
+  if (!storyPrompt || !storyGoal) { alert("Please provide a story prompt and a goal."); return; }
+
+  btnGenerate.textContent = "Generating...";
+  btnGenerate.disabled = true;
+
+  try {
+    // Use a text-optimized model for logic
+    const modelName = "gemini-1.5-flash"; 
+
+    const prompt = `
+      You are an expert at creating adventure games. Your task is to generate a complete game in JSON format based on the user's story idea.
+      The JSON must follow this structure:
+      - A 'start' property with the ID of the starting scene.
+      - A 'scenes' array, where each scene has:
+        - 'id': a unique kebab-case string.
+        - 'title': a short, descriptive title.
+        - 'description': a longer description of the scene.
+        - 'image_prompt': a prompt for an image generation model, including cardinal directions (East is forward).
+        - 'videoUrl': optional URL for a video.
+        - 'kind': 'base' or 'overlay'.
+        - 'actions': an array of actions the player can take.
+
+      Each action must have:
+      - 'type': 'move', 'look', or 'interact'.
+      - 'cmd': a short, lowercase command.
+      - 'label': a user-friendly label for the action.
+      - 'successor': the ID of the scene to move to (for 'move' and some 'interact' actions).
+      - 'overlayScene': the ID of the overlay scene to show (for 'look' actions).
+      - 'givesItem': the name of an item the player receives (for 'interact' actions).
+      - 'closeOverlayOnSuccess': a boolean to close an overlay after an action.
+
+      Here is the user's request:
+      Story Prompt: ${storyPrompt}
+      Goal: ${storyGoal}
+      Global Image Style: ${globalStyle}
+
+      Generate a complete game with multiple scenes, including at least one overlay scene. Ensure all scenes are reachable and the game is winnable.
+      The output must be only the JSON object, with no other text or markdown.
+    `;
+
+    const result = await callGeminiREST(apiKey, modelName, prompt);
+    
+    // Parse text result
+    const candidates = result.candidates;
+    if (!candidates || !candidates.length) throw new Error("No content generated");
+    
+    const text = candidates[0].content.parts[0].text;
+    // Clean markdown code blocks if present
+    const jsonText = text.replace(/```json|```/g, "").trim();
+    const generatedData = JSON.parse(jsonText);
+
+    data.start = generatedData.start;
+    data.scenes = generatedData.scenes;
+    save();
+    render();
+
+  } catch (error) {
+    console.error("Game Gen Error:", error);
+    alert("Error: " + error.message);
+  } finally {
+    btnGenerate.textContent = "Generate with Gemini";
+    btnGenerate.disabled = false;
+  }
+}
+
+// --- 2. GENERATE IMAGE (One per scene) ---
+async function generateImage(sidx, btnElement) {
+  const apiKey = elGeminiApiKey.value;
+  if (!apiKey) { alert("Please enter your Gemini API key."); return; }
+
+  const scene = data.scenes[sidx];
+  // Combine scene prompt with global style
+  const fullPrompt = `${scene.image_prompt}\n\nStyle Note: ${data.globalStyle}`;
+
+  const originalText = btnElement.textContent;
+  btnElement.textContent = "Generating Image...";
+  btnElement.disabled = true;
+
+  try {
+    // Use the specific image generation model
+    const modelName = "gemini-2.5-flash-image";
+
+    const result = await callGeminiREST(apiKey, modelName, fullPrompt);
+
+    // The image model returns inlineData in the parts array
+    const parts = result.candidates?.[0]?.content?.parts;
+    
+    if (!parts) throw new Error("No parts returned from API");
+
+    // Find the part that contains inlineData (the image)
+    const imagePart = parts.find(p => p.inlineData);
+
+    if (imagePart) {
+      const base64Data = imagePart.inlineData.data;
+      const mimeType = imagePart.inlineData.mimeType || "image/png";
+      
+      // Convert Base64 to Blob
+      const byteCharacters = atob(base64Data);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], {type: mimeType});
+
+      // Trigger Download
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${scene.id}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } else {
+      // Fallback if model refused or returned only text
+      const textPart = parts.find(p => p.text);
+      alert(textPart ? "Model Refusal: " + textPart.text : "No image data found.");
+    }
+
+  } catch (error) {
+    console.error("Image Gen Error:", error);
+    alert("Error: " + error.message);
+  } finally {
+    btnElement.textContent = originalText;
+    btnElement.disabled = false;
+  }
+}
+
+
+// --- UI LOGIC ---
+function render() {
+  elStoryPrompt.value = data.storyPrompt || "";
+  elStoryGoal.value = data.storyGoal || "";
+  elGlobalStyle.value = data.globalStyle || defaultGlobalStyle;
+  elAssetBase.value = data.assetBase || "";
+  elImgExt.value = data.imgExt || "jpg";
+  renderScenes();
+  renderStart();
+}
+
+function renderStart() {
+  elStartSelect.innerHTML = "";
+  data.scenes.filter(s => s.kind !== "overlay").forEach(s => {
+    const opt = document.createElement("option");
+    opt.value = s.id; opt.textContent = s.id;
+    elStartSelect.appendChild(opt);
+  });
+  if (data.start) elStartSelect.value = data.start;
+}
+
+function renderScenes() {
+  elSceneList.innerHTML = "";
+  elSceneCount.textContent = `${data.scenes.length} scenes`;
+  data.scenes.forEach((s, idx) => {
+    const div = document.createElement("div");
+    div.className = "scene";
+    div.innerHTML = `
+      <div class="row" style="align-items:center; gap:6px;">
+        <div class="tag">${s.kind || "base"}</div>
+        <input value="${s.id || ""}" placeholder="id (kebab)" data-field="id">
+        <input value="${s.title || ""}" placeholder="title" data-field="title">
+        <button class="small danger" data-action="del">Delete</button>
+      </div>
+      <label>Description</label>
+      <textarea data-field="description">${s.description || ""}</textarea>
+      <div class="row" style="gap:6px;">
+        <div style="flex:1;">
+          <label>Video URL (.mp4 optional)</label>
+          <input value="${s.videoUrl || ""}" data-field="videoUrl">
+        </div>
+        <div style="flex:1;">
+          <label>Image Prompt (compass-aligned)</label>
+          <textarea data-field="image_prompt">${s.image_prompt || ""}</textarea>
+        </div>
+      </div>
+      <div class="row" style="gap:6px; align-items:center; margin-top:6px;">
+        <button class="small" data-action="generateImage">Generate Image</button>
+        <button class="small" data-action="addAction">Add Action</button>
+        <span class="muted">Actions (${(s.actions||[]).length})</span>
+      </div>
+      <div class="actions" data-actions></div>
+    `;
+    const actContainer = div.querySelector("[data-actions]");
+    (s.actions || []).forEach((a, aidx) => {
+      const ar = document.createElement("div");
+      ar.className = "action-row";
+      ar.innerHTML = `
+        <div class="row" style="gap:6px; align-items:center;">
+          <select data-afield="type" style="width:110px;">
+            <option value="move">move</option>
+            <option value="look">look</option>
+            <option value="interact">interact</option>
+          </select>
+          <input data-afield="cmd" placeholder="cmd" value="${a.cmd || ""}">
+          <input data-afield="label" placeholder="label" value="${a.label || ""}">
+          <button class="small danger" data-action="delAction">✕</button>
+        </div>
+        <div class="row" style="gap:6px; margin-top:4px;">
+          <input data-afield="successor" placeholder="successor (move/interact)" value="${a.successor || ""}">
+          <input data-afield="overlayScene" placeholder="overlay scene (look)" value="${a.overlayScene || ""}">
+          <input data-afield="givesItem" placeholder="gives item (interact)" value="${a.givesItem || ""}">
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;">
+            <input type="checkbox" data-afield="closeOverlayOnSuccess" ${a.closeOverlayOnSuccess ? "checked":""}> close overlay
+          </label>
+        </div>
+      `;
+      ar.querySelector('[data-afield="type"]').value = a.type || "move";
+      ar.querySelectorAll("[data-afield]").forEach(inp => {
+        inp.addEventListener("change", () => {
+          applyActionEdit(idx, aidx, ar);
+        });
+      });
+      ar.querySelector('[data-action="delAction"]').addEventListener("click", () => {
+        s.actions.splice(aidx,1); save(); renderScenes();
+      });
+      actContainer.appendChild(ar);
+    });
+    // Scene field edits
+    div.querySelectorAll("[data-field]").forEach(inp => {
+      inp.addEventListener("blur", () => { applySceneEdit(idx, div); });
+      inp.addEventListener("change", () => { applySceneEdit(idx, div); });
+    });
+    div.querySelector('[data-action="del"]').addEventListener("click", () => {
+      data.scenes.splice(idx,1);
+      if (data.start === s.id) data.start = data.scenes.find(sc => sc.kind!=="overlay")?.id || "";
+      save(); render();
+    });
+    div.querySelector('[data-action="addAction"]').addEventListener("click", () => {
+      s.actions = s.actions || [];
+      s.actions.push({ type:"move", cmd:"", label:"", successor:"", overlayScene:"", givesItem:"", closeOverlayOnSuccess:false });
+      save(); renderScenes();
+    });
+    // Bind Image Generation
+    div.querySelector('[data-action="generateImage"]').addEventListener("click", (e) => {
+      generateImage(idx, e.target);
+    });
+    elSceneList.appendChild(div);
+  });
+}
+
+function applySceneEdit(idx, container) {
+  const s = data.scenes[idx];
+  const map = {};
+  container.querySelectorAll("[data-field]").forEach(inp => {
+    map[inp.dataset.field] = inp.value;
+  });
+  s.id = map.id.trim();
+  s.title = map.title;
+  s.description = map.description;
+  s.videoUrl = map.videoUrl;
+  s.image_prompt = map.image_prompt;
+  save(); renderStart();
+}
+
+function applyActionEdit(sidx, aidx, container) {
+  const a = data.scenes[sidx].actions[aidx];
+  container.querySelectorAll("[data-afield]").forEach(inp => {
+    const key = inp.dataset.afield;
+    if (inp.type === "checkbox") a[key] = inp.checked;
+    else a[key] = inp.value;
+  });
+  a.cmd = (a.cmd || "").trim().toLowerCase();
+  a.type = (a.type || "move").toLowerCase();
+  save();
+}
+
+btnAddScene.addEventListener("click", () => {
+  const nid = prompt("New base scene id (kebab-case)", "new-scene");
+  if (!nid) return;
+  if (data.scenes.find(s => s.id === nid)) { alert("ID exists"); return; }
+  const scene = { id:nid, title:nid, description:"", image_prompt:"", videoUrl:"", kind:"base", actions:[] };
+  data.scenes.push(scene);
+  if (!data.start) data.start = nid;
+  save(); render();
+});
+
+btnAddOverlay.addEventListener("click", () => {
+  const nid = prompt("New overlay id (kebab-case)", "scene-overlay");
+  if (!nid) return;
+  if (data.scenes.find(s => s.id === nid)) { alert("ID exists"); return; }
+  const scene = { id:nid, title:`Close-up: ${nid}`, description:"Overlay detail.", image_prompt:"Close-up detail.", videoUrl:"", kind:"overlay", actions:[] };
+  data.scenes.push(scene);
+  save(); render();
+});
+
+elStoryPrompt.addEventListener("input", () => { data.storyPrompt = elStoryPrompt.value; save(); });
+elStoryGoal.addEventListener("input", () => { data.storyGoal = elStoryGoal.value; save(); });
+elGlobalStyle.addEventListener("input", () => { data.globalStyle = elGlobalStyle.value; save(); });
+elAssetBase.addEventListener("input", () => { data.assetBase = elAssetBase.value; save(); });
+elImgExt.addEventListener("change", () => { data.imgExt = elImgExt.value; save(); });
+elStartSelect.addEventListener("change", () => { data.start = elStartSelect.value; save(); });
+
+btnReset.addEventListener("click", () => { if (confirm("Reset builder data?")) resetAll(); });
+
+btnExport.addEventListener("click", () => {
+  const exportObj = {
+    start: data.start || (data.scenes.find(s=>s.kind!=="overlay")?.id || ""),
+    scenes: data.scenes
+  };
+  const blob = new Blob([JSON.stringify(exportObj, null, 2)], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "adventure-graph.json";
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+btnImport.addEventListener("click", () => {
+  const t = prompt("Paste JSON graph (start + scenes)");
+  if (!t) return;
+  try {
+    const obj = JSON.parse(t);
+    if (!obj.scenes || !Array.isArray(obj.scenes)) throw new Error("Missing scenes array");
+    data.scenes = obj.scenes;
+    data.start = obj.start || "";
+    save(); render();
+  } catch(e) { alert("Import failed: " + e.message); }
+});
+
+render();
+</script>
+</body>
+</html>
