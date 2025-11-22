@@ -1425,14 +1425,22 @@ Soft moonlit shadows, mild atmospheric haze, physically based lighting.
         UIStore.blobRegistry.clear();
         const promises = [];
         zip.forEach((relativePath, zipEntry) => {
-          if (zipEntry.name.match(/\.(png|jpg|jpeg)$/i)) {
+          if (zipEntry.dir) return;
+          const name = zipEntry.name.split('/').pop(); // Get filename
+          if (!name || name.startsWith(".")) return; // Skip hidden files
+
+          if (name.match(/\.(png|jpg|jpeg)$/i)) {
             promises.push(async () => {
               const blob = await zipEntry.async("blob");
               const url = URL.createObjectURL(blob);
-              // Assuming image names are like "scene-id.pano.jpg"
-              const idMatch = zipEntry.name.match(/([^/]+)\.pano\.(png|jpg|jpeg)$/i);
-              if (idMatch && idMatch[1]) {
-                UIStore.blobRegistry.set(idMatch[1], url);
+
+              // Remove extension
+              let id = name.replace(/\.(png|jpg|jpeg)$/i, "");
+              // Remove legacy .pano suffix if present
+              id = id.replace(/\.pano$/i, "");
+
+              if (id) {
+                UIStore.blobRegistry.set(id, url);
               }
             });
           }

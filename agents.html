@@ -384,7 +384,7 @@ Soft moonlit shadows, mild atmospheric haze, physically based lighting.`;
      * Helper to call Gemini REST API via fetch.
      * FIX: Removed "thinkingConfig" which caused the Invalid JSON payload error.
      */
-    async function callGeminiREST(apiKey, model, promptText) {
+    async function callGeminiREST(apiKey, model, promptText, generationConfig = null) {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
       const payload = {
@@ -392,8 +392,11 @@ Soft moonlit shadows, mild atmospheric haze, physically based lighting.`;
           role: "user",
           parts: [{ text: promptText }]
         }]
-        // thinkingConfig removed as it is not supported in the standard generateContent schema for 3-pro-preview
       };
+
+      if (generationConfig) {
+        payload.generationConfig = generationConfig;
+      }
 
       const response = await fetch(url, {
         method: "POST",
@@ -438,12 +441,15 @@ Soft moonlit shadows, mild atmospheric haze, physically based lighting.`;
       - **Global Visual Style:** ${globalStyle}
 
       **Strict Schema Requirements:**
-      1.  **Output Format:** A single JSON object with \`{ start: "scene-id", scenes: [...] }\`. No markdown formatting.
-      2.  **Scene Types:**
+  1.  **Output Format:** A single JSON object with \`{ start: "scene-id", suggestedName: "snake_case_name", scenes: [...] }\`. No markdown formatting.
+  2.  **Global Properties:**
+      -   \`start\`: ID of the starting scene.
+      -   \`suggestedName\`: A short, snake_case name for the game (max 4 words, e.g., "haunted_mansion", "space_station_escape").
+  3.  **Scene Types:**
           -   **Base Scene (\`kind: "base"\`)**: An equirectangular 360° panorama. These are the main rooms or locations.
           -   **Overlay Scene (\`kind: "overlay"\`)**: A flat 2D close-up image. These are for examining objects, puzzles, or specific details.
           -   **Depth Limit:** Do not nest overlays deeper than 3 levels (Base -> Overlay -> Overlay -> Overlay).
-      3.  **Scene Properties:**
+      4.  **Scene Properties:**
           -   \`id\`: Unique kebab-case string (e.g., "kitchen", "old-desk").
           -   \`title\`: Short, readable title.
           -   \`description\`: Narrative text describing the scene to the player.
@@ -463,6 +469,12 @@ Soft moonlit shadows, mild atmospheric haze, physically based lighting.`;
           -   \`hiddenIfHas\`: (Optional) Array of item IDs that, if present in inventory, will HIDE this action.
           -   \`closeOverlayOnSuccess\`: (Boolean) True if the action closes the current overlay (e.g., "Leave", "Back").
       
+      **Advanced Gameplay Logic (CRITICAL):**
+      1.  **Gating & Puzzles:** Use \`requiredItems\` to lock key areas or actions. For example, a "Open Door" action should require a specific "key" item.
+      2.  **State Management:** Use \`hiddenIfHas\` to manage object state. For example, a "Take Key" action MUST have \`hiddenIfHas: ["key"]\` so it disappears after collection.
+      3.  **Progression:** Ensure the path to the win condition requires collecting at least 2-3 items and using them in specific locations. Do not make the game too simple.
+      4.  **Coherence:** Ensure that if an action gives an item, the narrative supports it (e.g., "You pick up the key.").
+
       **Game Logic & Consistency Rules:**
       -   **Navigation:** Base scenes must be connected via "move" actions. Use compass directions (north, south, east, west) where appropriate.
       -   **Interaction:** "look" actions should generally open "overlay" scenes for closer inspection.
@@ -471,11 +483,12 @@ Soft moonlit shadows, mild atmospheric haze, physically based lighting.`;
       -   **Visual Consistency:** All \`image_prompt\` fields must align with the provided **Global Visual Style**.
 
       **Example Output Structure:**
+  {
+    "start": "entry-hall",
+    "suggestedName": "victorian_mystery",
+    "scenes": [
       {
-        "start": "entry-hall",
-        "scenes": [
-          {
-            "id": "entry-hall",
+        "id": "entry-hall",
             "kind": "base",
             "title": "Entry Hall",
             "description": "You stand in a grand, dusty hall. To the North is a heavy door.",
@@ -535,6 +548,7 @@ Soft moonlit shadows, mild atmospheric haze, physically based lighting.`;
 
         data.start = generatedData.start;
         data.scenes = generatedData.scenes;
+        data.suggestedName = generatedData.suggestedName; // Store suggested name
         save();
         render();
 
@@ -545,6 +559,30 @@ Soft moonlit shadows, mild atmospheric haze, physically based lighting.`;
         btnGenerate.textContent = "Generate with Gemini";
         btnGenerate.disabled = false;
       }
+    }
+
+    function blobToJpeg(blob) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        const url = URL.createObjectURL(blob);
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0);
+          canvas.toBlob((jpegBlob) => {
+            URL.revokeObjectURL(url);
+            if (jpegBlob) resolve(jpegBlob);
+            else reject(new Error("Canvas toBlob failed"));
+          }, "image/jpeg", 0.8); // 0.8 quality
+        };
+        img.onerror = (e) => {
+          URL.revokeObjectURL(url);
+          reject(e);
+        };
+        img.src = url;
+      });
     }
 
     // --- 2. GENERATE IMAGE (One per scene) ---
@@ -560,10 +598,10 @@ Soft moonlit shadows, mild atmospheric haze, physically based lighting.`;
       btnElement.disabled = true;
 
       try {
-        // Using gemini-2.0-flash-exp as it is currently a reliable image model in v1beta
-        // Alternatively: "gemini-3-pro-preview" if you have access
+        // Using gemini-2.5-flash-image for image generation
         const modelName = "gemini-2.5-flash-image";
 
+        // Reverted: responseMimeType not supported by this model endpoint yet
         const result = await callGeminiREST(apiKey, modelName, fullPrompt);
 
         const parts = result.candidates?.[0]?.content?.parts;
@@ -573,7 +611,7 @@ Soft moonlit shadows, mild atmospheric haze, physically based lighting.`;
 
         if (imagePart) {
           const base64Data = imagePart.inlineData.data;
-          const mimeType = imagePart.inlineData.mimeType || "image/png";
+          const mimeType = imagePart.inlineData.mimeType || "image/jpeg";
 
           const byteCharacters = atob(base64Data);
           const byteNumbers = new Array(byteCharacters.length);
@@ -581,7 +619,14 @@ Soft moonlit shadows, mild atmospheric haze, physically based lighting.`;
             byteNumbers[i] = byteCharacters.charCodeAt(i);
           }
           const byteArray = new Uint8Array(byteNumbers);
-          const blob = new Blob([byteArray], { type: mimeType });
+          let blob = new Blob([byteArray], { type: mimeType });
+
+          // Convert to JPEG for size reduction
+          try {
+            blob = await blobToJpeg(blob);
+          } catch (e) {
+            console.warn("JPEG conversion failed, using original format", e);
+          }
 
           // Store for ZIP export
           imageBlobs.set(scene.id, blob);
@@ -590,11 +635,11 @@ Soft moonlit shadows, mild atmospheric haze, physically based lighting.`;
           const url = URL.createObjectURL(blob);
           const a = document.createElement("a");
           a.href = url;
-          a.download = `${scene.id}.png`; // Unified naming
+          a.download = `${scene.id}.jpg`; // Unified naming
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
-          URL.revokeObjectURL(url);
+          window.URL.revokeObjectURL(url);
         } else {
           const textPart = parts.find(p => p.text);
           alert(textPart ? "Model Refusal: " + textPart.text : "No image data found.");
@@ -647,7 +692,9 @@ Soft moonlit shadows, mild atmospheric haze, physically based lighting.`;
       // Add images
       let imageCount = 0;
       imageBlobs.forEach((blob, id) => {
-        zip.file(`${id}.png`, blob);
+        // Use correct extension based on mime type
+        const ext = blob.type === "image/png" ? "png" : "jpg";
+        zip.file(`${id}.${ext}`, blob);
         imageCount++;
       });
 
@@ -661,7 +708,7 @@ Soft moonlit shadows, mild atmospheric haze, physically based lighting.`;
       const url = window.URL.createObjectURL(content);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "adventure_game.zip";
+      a.download = data.suggestedName ? `${data.suggestedName}.zip` : "adventure_game.zip";
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
