@@ -6,289 +6,173 @@
   <title>Adventure360 Agent Builder</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
-    :root {
-      --bg: #0d1016;
-      --card: #121722;
-      --fg: #eef2f8;
-      --muted: #9aa5b8;
-      --line: #1e2733;
-      --accent: #4e8ef7;
-    }
-
-    * {
-      box-sizing: border-box;
-    }
-
     body {
+      background: #121212;
+      color: #e0e0e0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       margin: 0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-      background: var(--bg);
-      color: var(--fg);
+      padding-bottom: 40px;
     }
 
-    header {
-      padding: 14px 16px;
-      border-bottom: 1px solid var(--line);
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-
-    h1 {
-      margin: 0;
-      font-size: 18px;
-    }
-
-    main {
-      display: grid;
-      grid-template-columns: 320px 1fr;
-      gap: 12px;
-      padding: 12px 16px 24px;
-    }
-
-    @media (max-width:1000px) {
-      main {
-        grid-template-columns: 1fr;
-      }
-    }
-
+    /* Custom overrides for dark mode feel */
     .card {
-      background: var(--card);
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      padding: 12px;
+      background-color: #1e1e1e;
+      border-color: #333;
+      color: #e0e0e0;
+      margin-bottom: 1rem;
     }
 
-    .h {
-      font-size: 15px;
-      font-weight: 700;
-      margin: 0 0 8px;
+    .accordion-item {
+      background-color: #1e1e1e;
+      border-color: #333;
+      color: #e0e0e0;
     }
 
-    label {
-      display: block;
-      margin: 6px 0 4px;
-      color: var(--muted);
-      font-size: 13px;
+    .accordion-button {
+      background-color: #252525;
+      color: #e0e0e0;
     }
 
-    input,
-    textarea,
-    select,
-    button {
-      width: 100%;
-      border-radius: 8px;
-      border: 1px solid var(--line);
-      background: #151b26;
-      color: var(--fg);
-      padding: 8px 10px;
-      font-size: 14px;
+    .accordion-button:not(.collapsed) {
+      background-color: #2d4a2f;
+      color: #fff;
     }
 
-    textarea {
-      min-height: 90px;
-      resize: vertical;
+    .accordion-button::after {
+      filter: invert(1);
     }
 
-    button {
-      cursor: pointer;
+    .form-control,
+    .form-select {
+      background-color: #2a2a2a;
+      border-color: #444;
+      color: #e0e0e0;
     }
 
-    button:hover {
-      border-color: #2a3a52;
+    .form-control:focus,
+    .form-select:focus {
+      background-color: #2a2a2a;
+      color: #fff;
+      border-color: #555;
+      box-shadow: none;
     }
 
-    .row {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
+    .status-badge {
+      font-size: 0.8em;
+      margin-left: 10px;
     }
 
-    .pill {
-      display: inline-block;
-      padding: 4px 10px;
-      border-radius: 20px;
-      background: #151b26;
-      border: 1px solid var(--line);
-      font-size: 12px;
-      color: var(--muted);
-    }
-
-    .scene {
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      padding: 10px;
-      margin-bottom: 10px;
-      background: #0f131d;
-    }
-
-    .actions {
-      display: grid;
-      gap: 6px;
-    }
-
-    .action-row {
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 8px;
-      background: #0f141e;
+    /* Utility classes */
+    .mono {
+      font-family: 'Courier New', monospace;
     }
 
     .muted {
-      color: var(--muted);
-    }
-
-    .tag {
-      display: inline-block;
-      padding: 2px 6px;
-      border-radius: 6px;
-      border: 1px solid var(--line);
-      font-size: 11px;
-      color: #c8d5e8;
-    }
-
-    .danger {
-      background: #29141a;
-      border-color: #4b1e28;
-    }
-
-    .small {
-      width: auto;
-      padding: 6px 10px;
-    }
-
-    .mono {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-    }
-
-    .note {
-      font-size: 12px;
-      color: #c1ccdd;
-      background: #141925;
-      border: 1px solid #1f2937;
-      border-radius: 8px;
-      padding: 8px;
-      margin: 8px 0;
-    }
-
-    .scene-card {
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      padding: 12px;
-      margin-bottom: 16px;
-      background: #0f131d;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    }
-
-    .scene-header {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 10px;
-      padding-bottom: 8px;
-      border-bottom: 1px solid #1e2733;
-    }
-
-    .overlays-container {
-      margin-top: 12px;
-      padding-left: 16px;
-      border-left: 2px solid #2a3a52;
-      display: grid;
-      gap: 12px;
-    }
-
-    .overlay-card {
-      background: #131720;
-      border: 1px solid #2a313b;
-      border-radius: 8px;
-      padding: 10px;
-    }
-
-    .overlay-label {
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: #5c7cfa;
-      margin-bottom: 4px;
-      font-weight: 700;
+      color: #888;
     }
   </style>
 </head>
 
 <body>
-  <header>
-    <h1>Adventure360 Agent Builder</h1>
-    <span class="pill">Build story → scenes → actions → JSON</span>
-    <div class="row" style="margin-left:auto; gap:6px;">
-      <button id="btnImport" class="small">Import JSON</button>
-      <button id="btnExport" class="small">Export JSON</button>
-      <button id="btnReset" class="small danger">Reset</button>
+
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 sticky-top border-bottom border-secondary">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="#">Adventure360 Builder</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarActions">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarActions">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0 gap-2">
+          <li class="nav-item">
+            <button id="btnGenerate" class="btn btn-primary btn-sm">Generate Game (Gemini)</button>
+          </li>
+          <li class="nav-item">
+            <button id="btnGenerateAllImages" class="btn btn-success btn-sm">Generate All Images</button>
+          </li>
+          <li class="nav-item">
+            <button id="btnImportImages" class="btn btn-secondary btn-sm">Import Images</button>
+          </li>
+          <li class="nav-item">
+            <button id="btnExportZip" class="btn btn-warning btn-sm text-dark">Export Game ZIP</button>
+          </li>
+          <li class="nav-item">
+            <button id="btnExport" class="btn btn-outline-light btn-sm">Export JSON</button>
+          </li>
+        </ul>
+        <div class="d-flex gap-2">
+          <button id="btnReset" class="btn btn-outline-danger btn-sm">Reset All</button>
+        </div>
+      </div>
     </div>
-  </header>
-  <main>
-    <section class="card">
-      <h2 class="h">Story Concept</h2>
-      <label>Prompt / Premise</label>
-      <textarea id="storyPrompt"
-        placeholder="e.g., A hackathon held in an abandoned floor of an office building results in bananas being found in odd places throughout the space."></textarea>
-      <label>Goal / Win Condition</label>
-      <textarea id="storyGoal" placeholder="e.g., Collect all bananas and unlock the rooftop."></textarea>
-      <label>Global Image Style</label>
-      <textarea id="globalStyle" placeholder="Shared style applied to all prompts."></textarea>
-      <div class="note">
-        Orientation rule: East is forward (0°). Describe placement with N/E/S/W relative to that. Overlays are static
-        close-ups; match parent scene style/content.
-      </div>
-      <label>Gemini API Key (stored locally)</label>
-      <input id="geminiKeyInput" type="password" placeholder="Enter Gemini API key">
-      <div class="row" style="margin-top:8px;">
-        <div style="flex:1 1 120px;">
-          <label>Asset base</label>
-          <input id="assetBase" placeholder="./assets" />
-        </div>
-        <div style="width:120px;">
-          <label>Ext</label>
-          <select id="imgExt">
-            <option value="jpg">jpg</option>
-            <option value="png">png</option>
-            <option value="webp">webp</option>
-          </select>
-        </div>
-      </div>
-      <div class="note">
-        Base scene assets: {sceneId}.pano.{ext}. Overlay assets: {sceneId}.png. Keep naming consistent when downloading
-        from Gemini.
-      </div>
-      <div class="row" style="margin-top:10px;">
-        <button id="btnGenerate">Generate with Gemini</button>
-        <button id="btnGenerateAllImages" style="background:#2d4a2f; border-color:#436e46;">Generate All Images</button>
-        <button id="btnImportImages" style="background:#2d3a4a; border-color:#435e6e;">Import Images</button>
-        <button id="btnExportZip" style="background:#8a6d3b; border-color:#a88d5e;">Export Game ZIP</button>
-        <input type="file" id="fileImportImages" multiple accept="image/*" style="display:none">
-      </div>
-      <div class="row" style="margin-top:10px;">
-        <button id="btnAddScene">Add Base Scene</button>
-        <button id="btnAddOverlay">Add Overlay</button>
-      </div>
-      <!-- Hidden duplicate input kept for logic compatibility -->
-      <input id="geminiApiKey" type="hidden" />
-    </section>
+  </nav>
 
-    <section class="card">
-      <div class="row" style="align-items:center; margin-bottom:6px;">
-        <h2 class="h" style="margin:0;">Scenes</h2>
-        <div class="muted" id="sceneCount"></div>
-        <div class="row" style="margin-left:auto; width:220px;">
-          <label style="margin:0; font-size:12px;">Start Scene</label>
-          <select id="startSelect"></select>
+  <div class="container-fluid">
+    <div class="row">
+      <!-- Left Column: Settings & Prompt -->
+      <div class="col-md-4">
+        <div class="card">
+          <div class="card-header">Game Settings</div>
+          <div class="card-body">
+            <div class="mb-3">
+              <label class="form-label">Gemini API Key</label>
+              <input id="geminiKeyInput" type="password" class="form-control" placeholder="Enter API Key">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Story Premise</label>
+              <textarea id="storyPrompt" class="form-control" rows="3"
+                placeholder="e.g. A haunted victorian mansion..."></textarea>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Win Condition</label>
+              <input id="storyGoal" class="form-control" placeholder="e.g. Find the ghost's locket">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Global Visual Style</label>
+              <textarea id="globalStyle" class="form-control" rows="3"></textarea>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Image Format</label>
+              <select id="imgExt" class="form-select">
+                <option value="jpg">jpg</option>
+                <option value="png">png</option>
+              </select>
+            </div>
+            <!-- Hidden inputs for compatibility -->
+            <input id="assetBase" type="hidden" value="./assets">
+            <input id="geminiApiKey" type="hidden">
+            <input type="file" id="fileImportImages" multiple accept="image/*" style="display:none">
+            <input type="file" id="fileImport" accept=".json" style="display:none">
+            <button id="btnImport" style="display:none"></button>
+          </div>
         </div>
       </div>
-      <div id="sceneList"></div>
-    </section>
-  </main>
 
+      <!-- Right Column: Scenes List -->
+      <div class="col-md-8">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Scenes <span id="sceneCount" class="badge bg-secondary">0</span></span>
+            <div class="d-flex gap-2 align-items-center">
+              <select id="startSelect" class="form-select form-select-sm" style="width:auto;"></select>
+              <button id="btnAddScene" class="btn btn-sm btn-outline-light">+ Base Scene</button>
+            </div>
+          </div>
+          <div class="card-body p-0">
+            <div class="accordion" id="sceneAccordion">
+              <!-- Scenes rendered here -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
     const LS_KEY = "adv360_agent_graph_v1";
     const defaultGlobalStyle = `Equirectangular 360° panorama, ultra coherent series look.
@@ -329,11 +213,10 @@ Soft moonlit shadows, mild atmospheric haze, physically based lighting.`;
     const elImgExt = document.getElementById("imgExt");
     const elGeminiKeyInput = document.getElementById("geminiKeyInput");
     const elGeminiApiKey = document.getElementById("geminiApiKey"); // hidden syncing input
-    const elSceneList = document.getElementById("sceneList");
+    const elSceneList = document.getElementById("sceneAccordion"); // Changed to target accordion
     const elSceneCount = document.getElementById("sceneCount");
     const elStartSelect = document.getElementById("startSelect");
     const btnAddScene = document.getElementById("btnAddScene");
-    const btnAddOverlay = document.getElementById("btnAddOverlay");
     const btnImport = document.getElementById("btnImport");
     const btnExport = document.getElementById("btnExport");
     const btnReset = document.getElementById("btnReset");
@@ -384,31 +267,24 @@ Soft moonlit shadows, mild atmospheric haze, physically based lighting.`;
      * Helper to call Gemini REST API via fetch.
      * FIX: Removed "thinkingConfig" which caused the Invalid JSON payload error.
      */
-    async function callGeminiREST(apiKey, model, promptText, generationConfig = null) {
+    async function callGeminiREST(apiKey, model, promptText, generationConfig = {}) {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
-      const payload = {
-        contents: [{
-          role: "user",
-          parts: [{ text: promptText }]
-        }]
+      const body = {
+        contents: [{ parts: [{ text: promptText }] }],
+        generationConfig: generationConfig
       };
-
-      if (generationConfig) {
-        payload.generationConfig = generationConfig;
-      }
 
       const response = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(body)
       });
 
       if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.error?.message || response.statusText);
+        const errText = await response.text();
+        throw new Error(`Gemini API Error (${response.status}): ${errText}`);
       }
-
       return await response.json();
     }
 
@@ -430,15 +306,15 @@ Soft moonlit shadows, mild atmospheric haze, physically based lighting.`;
         const modelName = "gemini-3-pro-preview";
 
         const prompt = `
-      You are an expert at creating Adventure360 games. Build a coherent, winnable story that follows the schema from Scenes.MD, Actions.MD, and State.MD.
+      You are an expert at creating interactive text adventure games. Build a coherent, winnable story that follows the schema from Scenes.MD, Actions.MD, and State.MD.
       
       **Core Objective:**
       Create a "Choose Your Own Adventure" style game based on the user's premise and goal. The player must be able to navigate through scenes, interact with objects, and eventually achieve the win condition.
 
       **User Request:**
-      - **Story Premise:** ${storyPrompt}
-      - **Win Condition:** ${storyGoal}
-      - **Global Visual Style:** ${globalStyle}
+      -   **Story Premise:** ${storyPrompt}
+      -   **Win Condition:** ${storyGoal}
+      -   **Global Visual Style:** ${globalStyle}
 
       **Strict Schema Requirements:**
   1.  **Output Format:** A single JSON object with \`{ start: "scene-id", suggestedName: "snake_case_name", scenes: [...] }\`. No markdown formatting.
@@ -602,6 +478,7 @@ Soft moonlit shadows, mild atmospheric haze, physically based lighting.`;
         const modelName = "gemini-2.5-flash-image";
 
         // Reverted: responseMimeType not supported by this model endpoint yet
+        // Also removed aspectRatio as it caused 400 Invalid JSON payload error
         const result = await callGeminiREST(apiKey, modelName, fullPrompt);
 
         const parts = result.candidates?.[0]?.content?.parts;
@@ -651,6 +528,7 @@ Soft moonlit shadows, mild atmospheric haze, physically based lighting.`;
       } finally {
         btnElement.textContent = originalText;
         btnElement.disabled = false;
+        renderScenes(); // Re-render to update image status badge
       }
     }
 
@@ -664,7 +542,8 @@ Soft moonlit shadows, mild atmospheric haze, physically based lighting.`;
       try {
         for (let i = 0; i < data.scenes.length; i++) {
           const scene = data.scenes[i];
-          const btn = document.querySelector(`[data-sidx="${i}"][data-action="generateImage"]`);
+          // Find the button dynamically, as the DOM is re-rendered
+          const btn = document.querySelector(`#collapse-${scene.id} [data-action="generateImage"]`);
           if (btn) {
             await generateImage(i, btn);
             // Small delay to avoid hitting API rate limits too hard
@@ -728,6 +607,7 @@ Soft moonlit shadows, mild atmospheric haze, physically based lighting.`;
       }
       alert(`Imported ${count} images. They will be included in the ZIP export.`);
       e.target.value = ""; // Reset
+      renderScenes(); // Re-render to update image status badge
     }
 
     // --- UI LOGIC ---
@@ -753,217 +633,294 @@ Soft moonlit shadows, mild atmospheric haze, physically based lighting.`;
     }
 
     function renderScenes() {
-      elSceneList.innerHTML = "";
-      elSceneCount.textContent = `${data.scenes.length} scenes`;
+      elSceneList.innerHTML = ""; // Now targets the accordion container
+      const accordion = document.getElementById("sceneAccordion");
+      accordion.innerHTML = "";
 
-      // Helper to render a single scene card (base or overlay)
-      const renderCard = (s, idx, isOverlay = false) => {
-        const div = document.createElement("div");
-        div.className = isOverlay ? "overlay-card" : "scene-card";
-        div.innerHTML = `
-      ${isOverlay ? `<div class="overlay-label">Overlay for ${s.parentScene || "?"}</div>` : ""}
-      <div class="scene-header">
-        <div class="tag">${s.kind || "base"}</div>
-        <input value="${s.id || ""}" placeholder="id (kebab)" data-field="id" style="font-weight:bold; width:200px;">
-        <input value="${s.title || ""}" placeholder="title" data-field="title" style="flex:1;">
-        <button class="small danger" data-action="del" style="width:auto;">Delete</button>
-      </div>
-      ${s.kind === "overlay" ? `
-      <div class="row" style="gap:6px; margin-bottom:8px;">
-        <input value="${s.parentScene || ""}" placeholder="parent scene id (base)" data-field="parentScene">
-        <label class="muted" style="margin:0;">Overlay images are static close-ups.</label>
-      </div>
-      ` : ""}
-      <label>Description</label>
-      <textarea data-field="description">${s.description || ""}</textarea>
-      <div class="row" style="gap:6px; margin-top:8px;">
-        <div style="flex:1;">
-          <label>Video URL (.mp4 optional)</label>
-          <input value="${s.videoUrl || ""}" data-field="videoUrl">
-        </div>
-        <div style="flex:1;">
-          <label>Image Prompt (${isOverlay ? "Flat 2D" : "360° East-Forward"})</label>
-          <textarea data-field="image_prompt">${s.image_prompt || ""}</textarea>
-        </div>
-      </div>
-      <div class="row" style="gap:6px; align-items:center; margin-top:8px; padding-top:8px; border-top:1px solid #1e2733;">
-        <button class="small" data-action="generateImage" data-sidx="${idx}">Generate Image</button>
-        <button class="small" data-action="addAction">Add Action</button>
-        ${!isOverlay ? `<button class="small" data-action="addOverlayChild">Add Overlay</button>` : ""}
-        <span class="muted" style="margin-left:auto; font-size:12px;">Actions: ${(s.actions || []).length}</span>
-      </div>
-      <div class="actions" data-actions style="margin-top:8px;"></div>
-      ${!isOverlay ? `<div class="overlays-container" data-overlays></div>` : ""}
-    `;
+      elSceneCount.textContent = data.scenes.length;
 
-        // Render Actions
-        const actContainer = div.querySelector("[data-actions]");
-        (s.actions || []).forEach((a, aidx) => {
-          const ar = document.createElement("div");
-          ar.className = "action-row";
-          ar.innerHTML = `
-        <div class="row" style="gap:6px; align-items:center;">
-          <select data-afield="type" style="width:110px;">
-            <option value="move">move</option>
-            <option value="look">look</option>
-            <option value="interact">interact</option>
-          </select>
-          <input data-afield="cmd" placeholder="cmd" value="${a.cmd || ""}">
-          <input data-afield="label" placeholder="label" value="${a.label || ""}">
-          <button class="small danger" data-action="delAction">✕</button>
-        </div>
-        <div class="row" style="gap:6px; margin-top:4px;">
-          <input data-afield="successor" placeholder="successor" value="${a.successor || ""}">
-          <input data-afield="overlayScene" placeholder="overlay scene" value="${a.overlayScene || ""}">
-          <input data-afield="givesItem" placeholder="gives item" value="${a.givesItem || ""}">
-        </div>
-        <div class="row" style="gap:6px; margin-top:4px;">
-          <input data-afield="requiredItems" placeholder="required items (csv)" value="${(a.requiredItems || []).join(",")}">
-          <input data-afield="hiddenIfHas" placeholder="hidden if has (csv)" value="${(a.hiddenIfHas || []).join(",")}">
-          <label style="display:flex;align-items:center;gap:4px;font-size:12px;">
-            <input type="checkbox" data-afield="closeOverlayOnSuccess" ${a.closeOverlayOnSuccess ? "checked" : ""}> close overlay
-          </label>
-        </div>
-      `;
-          ar.querySelector('[data-afield="type"]').value = a.type || "move";
-          ar.querySelectorAll("[data-afield]").forEach(inp => {
-            inp.addEventListener("change", () => { applyActionEdit(idx, aidx, ar); });
-          });
-          ar.querySelector('[data-action="delAction"]').addEventListener("click", () => {
-            s.actions.splice(aidx, 1); save(); renderScenes();
-          });
-          actContainer.appendChild(ar);
+      // Group scenes: Base scenes at top level, overlays nested
+      const baseScenes = data.scenes.filter(s => s.kind !== "overlay");
+      const overlayScenes = data.scenes.filter(s => s.kind === "overlay");
+
+      baseScenes.forEach((s, idx) => {
+        // Find overlays for this base scene
+        // Improved matching: Check parentScene, ID prefix, OR if referenced by an action in this base scene
+        const childOverlays = overlayScenes.filter(o =>
+          o.parentScene === s.id ||
+          o.id.startsWith(s.id + "-") ||
+          o.id.startsWith(s.id + "_") ||
+          (s.actions || []).some(a => a.overlayScene === o.id)
+        );
+
+        // Check asset status
+        const hasImage = imageBlobs.has(s.id);
+        const statusBadge = hasImage
+          ? `<span class="badge bg-success status-badge">Img: OK</span>`
+          : `<span class="badge bg-secondary status-badge">Img: Missing</span>`;
+
+        const item = document.createElement("div");
+        item.className = "accordion-item";
+        item.innerHTML = `
+          <h2 class="accordion-header" id="heading-${s.id}">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-${s.id}">
+              <span class="fw-bold me-2">${s.title || s.id}</span> 
+              <span class="mono text-muted me-2">(${s.id})</span>
+              ${statusBadge}
+            </button>
+          </h2>
+          <div id="collapse-${s.id}" class="accordion-collapse collapse" data-bs-parent="#sceneAccordion">
+            <div class="accordion-body">
+              <!-- Scene Editor Fields -->
+              <div class="mb-3">
+                <label class="form-label text-muted small">Description</label>
+                <textarea class="form-control form-control-sm" data-field="description" rows="2">${s.description || ""}</textarea>
+              </div>
+              <div class="mb-3">
+                <label class="form-label text-muted small">Image Prompt</label>
+                <div class="input-group input-group-sm">
+                  <textarea class="form-control" data-field="image_prompt" rows="2">${s.image_prompt || ""}</textarea>
+                  <button class="btn btn-outline-secondary" data-action="generateImage">Generate Img</button>
+                </div>
+              </div>
+              <div class="mb-3">
+                <label class="form-label text-muted small">Video URL (Optional)</label>
+                <input class="form-control form-control-sm" data-field="videoUrl" value="${s.videoUrl || ""}">
+              </div>
+
+              <!-- Actions -->
+              <div class="mb-3">
+                <label class="form-label text-muted small">Actions</label>
+                <div class="actions-container d-flex flex-column gap-2"></div>
+                <button class="btn btn-sm btn-outline-secondary mt-2" data-action="addAction">+ Add Action</button>
+              </div>
+
+              <!-- Nested Overlays -->
+              <div class="mt-4 border-top pt-3">
+                <h6 class="text-muted small text-uppercase">Overlays</h6>
+                <div class="nested-overlays d-flex flex-column gap-2"></div>
+                <button class="btn btn-sm btn-outline-secondary mt-2" data-action="addOverlay">+ Add Overlay</button>
+              </div>
+
+              <div class="mt-3 text-end">
+                <button class="btn btn-sm btn-danger" data-action="del">Delete Scene</button>
+              </div>
+            </div>
+          </div>
+        `;
+
+        // Bind Events
+        const body = item.querySelector(".accordion-body");
+
+        // Field Updates
+        body.querySelectorAll("[data-field]").forEach(inp => {
+          inp.addEventListener("change", (e) => { s[e.target.dataset.field] = e.target.value; save(); });
         });
 
-        // Event Listeners
-        div.querySelectorAll("[data-field]").forEach(inp => {
-          inp.addEventListener("blur", () => { applySceneEdit(idx, div); });
-          inp.addEventListener("change", () => { applySceneEdit(idx, div); });
-        });
-        div.querySelector('[data-action="del"]').addEventListener("click", () => {
-          if (confirm(`Delete scene ${s.id}?`)) {
-            data.scenes.splice(idx, 1);
-            if (data.start === s.id) data.start = data.scenes.find(sc => sc.kind !== "overlay")?.id || "";
-            save(); render();
+        // Generate Image
+        body.querySelector('[data-action="generateImage"]').addEventListener("click", (e) => generateImage(data.scenes.indexOf(s), e.target));
+
+        // Delete Scene
+        body.querySelector('[data-action="del"]').addEventListener("click", () => {
+          if (confirm("Delete scene?")) {
+            data.scenes = data.scenes.filter(x => x.id !== s.id);
+            save(); renderScenes();
           }
         });
-        div.querySelector('[data-action="addAction"]').addEventListener("click", () => {
+
+        // Add Action
+        body.querySelector('[data-action="addAction"]').addEventListener("click", () => {
           s.actions = s.actions || [];
-          s.actions.push({ type: "move", cmd: "", label: "", successor: "", overlayScene: "", givesItem: "", requiredItems: [], hiddenIfHas: [], closeOverlayOnSuccess: false });
+          s.actions.push({ type: "move", cmd: "", label: "", successor: "" });
           save(); renderScenes();
         });
-        div.querySelector('[data-action="generateImage"]').addEventListener("click", (e) => {
-          generateImage(idx, e.target);
-        });
 
-        if (!isOverlay) {
-          div.querySelector('[data-action="addOverlayChild"]').addEventListener("click", () => {
-            const nid = prompt("New overlay id (kebab-case)", `${s.id}-detail`);
-            if (!nid) return;
-            if (data.scenes.find(x => x.id === nid)) { alert("ID exists"); return; }
-            const newOverlay = {
-              id: nid,
-              title: `Close-up: ${nid}`,
-              description: "Overlay detail.",
-              image_prompt: "Close-up detail.",
-              videoUrl: "",
-              kind: "overlay",
-              parentScene: s.id,
-              actions: []
-            };
-            data.scenes.push(newOverlay);
-            // Auto-link action
-            s.actions = s.actions || [];
-            s.actions.push({ type: "look", cmd: `look ${nid.replace(s.id + '-', '').replace(/-/g, ' ')}`, label: `Look`, overlayScene: nid });
+        // Render Actions
+        const actContainer = body.querySelector(".actions-container");
+        (s.actions || []).forEach((a, aidx) => {
+          const row = document.createElement("div");
+          row.className = "input-group input-group-sm";
+          row.innerHTML = `
+            <select class="form-select" style="max-width:100px;" data-afield="type">
+              <option value="move">Move</option><option value="look">Look</option><option value="interact">Interact</option>
+            </select>
+            <input class="form-control" placeholder="cmd" value="${a.cmd || ''}" data-afield="cmd">
+            <input class="form-control" placeholder="label" value="${a.label || ''}" data-afield="label">
+            <input class="form-control" placeholder="successor/overlay" value="${a.successor || a.overlayScene || ''}" data-afield="target">
+            <button class="btn btn-outline-danger" data-action="delAction">×</button>
+          `;
+
+          // Add second row for constraints
+          const row2 = document.createElement("div");
+          row2.className = "input-group input-group-sm mt-1";
+          row2.innerHTML = `
+            <span class="input-group-text">Req</span>
+            <input class="form-control" placeholder="item1,item2" value="${(a.requiredItems || []).join(',')}" data-afield="requiredItems">
+            <span class="input-group-text">Hide</span>
+            <input class="form-control" placeholder="item1,item2" value="${(a.hiddenIfHas || []).join(',')}" data-afield="hiddenIfHas">
+             <div class="input-group-text">
+              <input class="form-check-input mt-0" type="checkbox" data-afield="closeOverlayOnSuccess" ${a.closeOverlayOnSuccess ? 'checked' : ''}>
+              <span class="ms-1" style="font-size:0.8em">Close</span>
+            </div>
+          `;
+
+          row.querySelector('[data-afield="type"]').value = a.type || "move";
+
+          const bindInputs = (container) => {
+            container.querySelectorAll("input, select").forEach(inp => {
+              inp.addEventListener("change", (e) => {
+                const f = e.target.dataset.afield;
+                if (f === "target") {
+                  if (a.type === "look") a.overlayScene = e.target.value;
+                  else a.successor = e.target.value;
+                } else if (f === "requiredItems" || f === "hiddenIfHas") {
+                  a[f] = e.target.value.split(",").map(x => x.trim()).filter(x => x);
+                } else if (f === "closeOverlayOnSuccess") {
+                  a[f] = e.target.checked;
+                } else {
+                  a[f] = e.target.value;
+                }
+                save();
+              });
+            });
+          };
+
+          bindInputs(row);
+          bindInputs(row2);
+
+          row.querySelector('[data-action="delAction"]').addEventListener("click", () => {
+            s.actions.splice(aidx, 1);
             save(); renderScenes();
           });
-        }
 
-        return div;
-      };
+          actContainer.appendChild(row);
+          actContainer.appendChild(row2);
+        });
 
-      // 1. Identify Base Scenes and Orphans
-      const baseScenes = [];
-      const orphans = [];
-      const overlayMap = new Map(); // parentId -> [indices]
+        // Render Nested Overlays
+        const overlayContainer = body.querySelector(".nested-overlays");
+        childOverlays.forEach(o => {
+          const oHasImage = imageBlobs.has(o.id);
+          const oBadge = oHasImage
+            ? `<span class="badge bg-success status-badge" style="font-size:0.7em">Img: OK</span>`
+            : `<span class="badge bg-secondary status-badge" style="font-size:0.7em">Img: Missing</span>`;
 
-      data.scenes.forEach((s, idx) => {
-        if (s.kind === "overlay") {
-          if (s.parentScene) {
-            if (!overlayMap.has(s.parentScene)) overlayMap.set(s.parentScene, []);
-            overlayMap.get(s.parentScene).push(idx);
-          } else {
-            orphans.push(idx);
+          const oCard = document.createElement("div");
+          oCard.className = "card mb-2 border-secondary";
+          oCard.innerHTML = `
+             <div class="card-body p-2">
+               <div class="d-flex justify-content-between align-items-center mb-2">
+                 <strong>${o.title || o.id} <span class="mono text-muted">(${o.id})</span> ${oBadge}</strong>
+                 <button class="btn btn-xs btn-outline-danger py-0" data-action="delOverlay">×</button>
+               </div>
+               <div class="input-group input-group-sm mb-2">
+                 <span class="input-group-text">Desc</span>
+                 <textarea class="form-control" rows="1" data-ofield="description">${o.description || ''}</textarea>
+               </div>
+                <div class="input-group input-group-sm mb-2">
+                 <span class="input-group-text">Img</span>
+                 <textarea class="form-control" rows="1" data-ofield="image_prompt">${o.image_prompt || ''}</textarea>
+                 <button class="btn btn-outline-secondary" data-action="genOverlayImg">Gen</button>
+               </div>
+             </div>
+           `;
+
+          oCard.querySelectorAll("[data-ofield]").forEach(inp => {
+            inp.addEventListener("change", (e) => { o[e.target.dataset.ofield] = e.target.value; save(); });
+          });
+
+          oCard.querySelector('[data-action="genOverlayImg"]').addEventListener("click", (e) => generateImage(data.scenes.indexOf(o), e.target));
+          oCard.querySelector('[data-action="delOverlay"]').addEventListener("click", () => {
+            if (confirm("Delete overlay?")) {
+              data.scenes = data.scenes.filter(x => x.id !== o.id);
+              save(); renderScenes();
+            }
+          });
+
+          overlayContainer.appendChild(oCard);
+        });
+
+        // Add Overlay Button Logic
+        body.querySelector('[data-action="addOverlay"]').addEventListener("click", () => {
+          const newId = prompt("Overlay ID:", `${s.id}-overlay`);
+          if (newId) {
+            data.scenes.push({ id: newId, kind: "overlay", title: "New Overlay", description: "", image_prompt: "Close up of...", actions: [] });
+            save(); renderScenes();
           }
-        } else {
-          baseScenes.push(idx);
-        }
-      });
-
-      // 2. Render Base Scenes + Children
-      baseScenes.forEach(baseIdx => {
-        const s = data.scenes[baseIdx];
-        const card = renderCard(s, baseIdx, false);
-        const overlayContainer = card.querySelector("[data-overlays]");
-
-        const childIndices = overlayMap.get(s.id) || [];
-        childIndices.forEach(childIdx => {
-          const childS = data.scenes[childIdx];
-          const childCard = renderCard(childS, childIdx, true);
-          overlayContainer.appendChild(childCard);
         });
 
-        elSceneList.appendChild(card);
+        accordion.appendChild(item);
       });
 
-      // 3. Render Orphans (if any)
-      if (orphans.length > 0) {
-        const orphanHeader = document.createElement("div");
-        orphanHeader.className = "h muted";
-        orphanHeader.textContent = "Unlinked Overlays";
-        orphanHeader.style.marginTop = "20px";
-        elSceneList.appendChild(orphanHeader);
+      // Handle Orphaned Overlays (those not matched to any base scene)
+      const matchedOverlayIds = new Set();
+      baseScenes.forEach(s => {
+        const children = overlayScenes.filter(o =>
+          o.parentScene === s.id ||
+          o.id.startsWith(s.id + "-") ||
+          o.id.startsWith(s.id + "_") ||
+          (s.actions || []).some(a => a.overlayScene === o.id) // Also check if referenced by an action
+        );
+        children.forEach(c => matchedOverlayIds.add(c.id));
+      });
 
-        orphans.forEach(idx => {
-          const s = data.scenes[idx];
-          elSceneList.appendChild(renderCard(s, idx, true));
+      const orphanedOverlays = overlayScenes.filter(o => !matchedOverlayIds.has(o.id));
+
+      if (orphanedOverlays.length > 0) {
+        const orphanContainer = document.createElement("div");
+        orphanContainer.className = "mt-4 border-top pt-3";
+        orphanContainer.innerHTML = `<h5 class="text-warning">Orphaned Overlays (Not linked to base scenes)</h5>`;
+
+        const list = document.createElement("div");
+        list.className = "d-flex flex-column gap-2";
+        orphanContainer.appendChild(list);
+
+        orphanedOverlays.forEach(o => {
+          const oHasImage = imageBlobs.has(o.id);
+          const oBadge = oHasImage
+            ? `<span class="badge bg-success status-badge">Img: OK</span>`
+            : `<span class="badge bg-secondary status-badge">Img: Missing</span>`;
+
+          const oCard = document.createElement("div");
+          oCard.className = "card border-warning";
+          oCard.innerHTML = `
+             <div class="card-body p-2">
+               <div class="d-flex justify-content-between align-items-center mb-2">
+                 <strong>${o.title || o.id} <span class="mono text-muted">(${o.id})</span> ${oBadge}</strong>
+                 <button class="btn btn-xs btn-outline-danger py-0" data-action="delOverlay">×</button>
+               </div>
+               <div class="input-group input-group-sm mb-2">
+                 <span class="input-group-text">Desc</span>
+                 <textarea class="form-control" rows="1" data-ofield="description">${o.description || ''}</textarea>
+               </div>
+                <div class="input-group input-group-sm mb-2">
+                 <span class="input-group-text">Img</span>
+                 <textarea class="form-control" rows="1" data-ofield="image_prompt">${o.image_prompt || ''}</textarea>
+                 <button class="btn btn-outline-secondary" data-action="genOverlayImg">Gen</button>
+               </div>
+             </div>
+           `;
+
+          oCard.querySelectorAll("[data-ofield]").forEach(inp => {
+            inp.addEventListener("change", (e) => { o[e.target.dataset.ofield] = e.target.value; save(); });
+          });
+
+          oCard.querySelector('[data-action="genOverlayImg"]').addEventListener("click", (e) => generateImage(data.scenes.indexOf(o), e.target));
+          oCard.querySelector('[data-action="delOverlay"]').addEventListener("click", () => {
+            if (confirm("Delete overlay?")) {
+              data.scenes = data.scenes.filter(x => x.id !== o.id);
+              save(); renderScenes();
+            }
+          });
+
+          list.appendChild(oCard);
         });
+
+        elSceneList.appendChild(orphanContainer);
       }
     }
 
-    function applySceneEdit(idx, container) {
-      const s = data.scenes[idx];
-      const map = {};
-      container.querySelectorAll("[data-field]").forEach(inp => {
-        map[inp.dataset.field] = inp.value;
-      });
-      s.id = map.id.trim();
-      s.title = map.title;
-      s.description = map.description;
-      s.videoUrl = map.videoUrl;
-      s.image_prompt = map.image_prompt;
-      if (s.kind === "overlay") s.parentScene = map.parentScene;
-      save(); renderStart();
-    }
-
-    function applyActionEdit(sidx, aidx, container) {
-      const s = data.scenes[sidx];
-      const a = s.actions[aidx];
-      container.querySelectorAll("[data-afield]").forEach(inp => {
-        const field = inp.dataset.afield;
-        if (field === "closeOverlayOnSuccess") {
-          a[field] = inp.checked;
-        } else if (field === "requiredItems" || field === "hiddenIfHas") {
-          a[field] = inp.value.split(",").map(x => x.trim()).filter(x => x);
-        } else {
-          a[field] = inp.value;
-        }
-      });
-      a.cmd = (a.cmd || "").trim().toLowerCase();
-      a.type = (a.type || "move").toLowerCase();
-      save();
-    }
-
+    // Event Listeners
     btnAddScene.addEventListener("click", () => {
       const nid = prompt("New base scene id (kebab-case)", "new-scene");
       if (!nid) return;
@@ -971,16 +928,7 @@ Soft moonlit shadows, mild atmospheric haze, physically based lighting.`;
       const scene = { id: nid, title: nid, description: "", image_prompt: "", videoUrl: "", kind: "base", actions: [] };
       data.scenes.push(scene);
       if (!data.start) data.start = nid;
-      save(); render();
-    });
-
-    btnAddOverlay.addEventListener("click", () => {
-      const nid = prompt("New overlay id (kebab-case)", "scene-overlay");
-      if (!nid) return;
-      if (data.scenes.find(s => s.id === nid)) { alert("ID exists"); return; }
-      const scene = { id: nid, title: `Close-up: ${nid}`, description: "Overlay detail.", image_prompt: "Close-up detail.", videoUrl: "", kind: "overlay", parentScene: "", actions: [] };
-      data.scenes.push(scene);
-      save(); render();
+      save(); renderScenes();
     });
 
     elStoryPrompt.addEventListener("input", () => { data.storyPrompt = elStoryPrompt.value; save(); });
@@ -996,12 +944,13 @@ Soft moonlit shadows, mild atmospheric haze, physically based lighting.`;
     btnExport.addEventListener("click", () => {
       const exportObj = {
         start: data.start || (data.scenes.find(s => s.kind !== "overlay")?.id || ""),
-        scenes: data.scenes
+        scenes: data.scenes,
+        suggestedName: data.storyPrompt ? data.storyPrompt.slice(0, 20).replace(/[^a-z0-9]/gi, '_') : "adventure"
       };
       const blob = new Blob([JSON.stringify(exportObj, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
-      a.href = url; a.download = "adventure-graph.json";
+      a.href = url; a.download = `${exportObj.suggestedName}.json`;
       a.click();
       URL.revokeObjectURL(url);
     });
@@ -1014,11 +963,27 @@ Soft moonlit shadows, mild atmospheric haze, physically based lighting.`;
         if (!obj.scenes || !Array.isArray(obj.scenes)) throw new Error("Missing scenes array");
         data.scenes = obj.scenes;
         data.start = obj.start || "";
-        save(); render();
+        save(); renderScenes();
       } catch (e) { alert("Import failed: " + e.message); }
     });
 
-    render();
+    // Initialize UI from loaded data
+    function initUI() {
+      if (data.storyPrompt) elStoryPrompt.value = data.storyPrompt;
+      if (data.storyGoal) elStoryGoal.value = data.storyGoal;
+      if (data.globalStyle) elGlobalStyle.value = data.globalStyle;
+      if (data.assetBase) elAssetBase.value = data.assetBase;
+      if (data.imgExt) elImgExt.value = data.imgExt;
+      if (data.geminiKey) elGeminiKeyInput.value = data.geminiKey;
+      if (data.start) {
+        // We need to populate the select first, which happens in renderScenes -> renderStartSelect (if it existed)
+        // But currently renderScenes doesn't populate the start select. 
+        // Let's just ensure we render first.
+      }
+    }
+
+    initUI();
+    renderScenes();
   </script>
 </body>
 
