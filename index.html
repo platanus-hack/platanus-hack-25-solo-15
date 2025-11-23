@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="utf-8" />
-    <title>Platanus Hack 2025: Banandamos</title>
+    <title>Platanus Hack 2025: Bananandamos</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css">
     <script src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
@@ -402,7 +402,7 @@
     </div>
 
     <header>
-        <h1 id="gameTitle">Banandamos Adventures</h1>
+        <h1 id="gameTitle">🍌Bananandamos</h1>
         <div class="tabs">
             <div class="tab active" data-target="textView">Text Adventure</div>
             <div class="tab" data-target="visualView">Visual Experience</div>
@@ -502,7 +502,16 @@
                 const zip = await JSZip.loadAsync(blob);
 
                 // Load game.json
-                const jsonFile = zip.file("game.json");
+                // Load game.json
+                let jsonFile = zip.file("game.json");
+                if (!jsonFile) {
+                    // Search for game.json in subdirectories
+                    const files = Object.keys(zip.files);
+                    const gameJsonPath = files.find(f => f.endsWith("game.json") && !f.includes("__MACOSX"));
+                    if (gameJsonPath) {
+                        jsonFile = zip.file(gameJsonPath);
+                    }
+                }
                 if (!jsonFile) throw new Error("game.json not found in ZIP");
                 const jsonText = await jsonFile.async("text");
                 State.graph = JSON.parse(jsonText);
@@ -534,7 +543,7 @@
                 await Promise.all(assetPromises);
 
                 // Start Game
-                els.gameTitle.textContent = State.graph.suggestedName || "Banandamos";
+                els.gameTitle.textContent = State.graph.suggestedName || "Bananandamos";
                 els.loading.style.display = "none";
                 loadScene(State.graph.start);
 

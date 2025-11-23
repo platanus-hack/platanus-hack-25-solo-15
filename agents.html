@@ -232,6 +232,101 @@ Soft moonlit shadows, mild atmospheric haze, physically based lighting.`;
     fileImportImages.addEventListener("change", importImages);
     btnExportZip.addEventListener("click", exportGameZip);
 
+    // Import Zip Logic
+    const btnImportZip = document.createElement("button");
+    btnImportZip.className = "btn btn-info btn-sm text-dark";
+    btnImportZip.textContent = "Import Zip";
+    document.querySelector("#btnImportImages").parentNode.insertAdjacentElement("beforebegin", wrapInLi(btnImportZip));
+
+    const fileImportZip = document.createElement("input");
+    fileImportZip.type = "file";
+    fileImportZip.accept = ".zip";
+    fileImportZip.style.display = "none";
+    document.body.appendChild(fileImportZip);
+
+    btnImportZip.addEventListener("click", () => fileImportZip.click());
+    fileImportZip.addEventListener("change", importGameZip);
+
+    function wrapInLi(el) {
+      const li = document.createElement("li");
+      li.className = "nav-item";
+      li.appendChild(el);
+      return li;
+    }
+
+    async function importGameZip(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      try {
+        const zip = await JSZip.loadAsync(file);
+
+        // 1. Find and load game.json
+        let jsonFile = zip.file("game.json");
+        if (!jsonFile) {
+          // Search recursively
+          const files = Object.keys(zip.files);
+          const gameJsonPath = files.find(f => f.endsWith("game.json") && !f.includes("__MACOSX"));
+          if (gameJsonPath) {
+            jsonFile = zip.file(gameJsonPath);
+          }
+        }
+
+        if (!jsonFile) throw new Error("game.json not found in ZIP");
+        const jsonText = await jsonFile.async("text");
+        const importedData = JSON.parse(jsonText);
+
+        // Validate schema roughly
+        if (!importedData.scenes || !importedData.start) {
+          throw new Error("Invalid game.json schema");
+        }
+
+        // 2. Load Images
+        let imgCount = 0;
+        const assetPromises = [];
+
+        zip.forEach((relativePath, zipEntry) => {
+          if (zipEntry.dir || zipEntry.name.includes("__MACOSX")) return;
+
+          const name = zipEntry.name.split('/').pop();
+          if (!name || name.startsWith(".")) return;
+
+          if (/\.(jpg|jpeg|png|webp)$/i.test(name)) {
+            assetPromises.push(zipEntry.async("blob").then(blob => {
+              // Map blob to scene ID
+              // Try to match exact scene ID from filename
+              let id = name.replace(/\.(jpg|jpeg|png|webp)$/i, "");
+              id = id.replace(/\.pano$/i, ""); // handle .pano suffix
+
+              // Store in memory
+              imageBlobs.set(id, blob);
+              imgCount++;
+            }));
+          }
+        });
+
+        await Promise.all(assetPromises);
+
+        // 3. Update State
+        data = { ...defaultData(), ...importedData };
+        // Restore API key if it was wiped (though usually we don't export it)
+        if (!data.geminiKey && localStorage.getItem(LS_KEY)) {
+          const old = JSON.parse(localStorage.getItem(LS_KEY));
+          if (old && old.geminiKey) data.geminiKey = old.geminiKey;
+        }
+
+        save();
+        render();
+        alert(`Game imported successfully! Loaded ${data.scenes.length} scenes and ${imgCount} images.`);
+
+      } catch (err) {
+        console.error(err);
+        alert("Failed to import ZIP: " + err.message);
+      } finally {
+        e.target.value = ""; // Reset input
+      }
+    }
+
     // In-memory storage for generated image blobs
     const imageBlobs = new Map(); // id -> Blob
 
