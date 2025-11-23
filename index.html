@@ -589,9 +589,11 @@
             else if (action.type === "look") {
                 if (action.overlayScene) {
                     openOverlay(action.overlayScene);
-                    return { success: true, msg: `You look at the ${action.cmd}.` };
+                    // Don't return a message, openOverlay handles the text output
+                    return { success: true };
                 }
-                return { success: true, msg: `You see nothing special about the ${action.cmd}.` };
+                const target = action.cmd.replace(/^look\s+/i, "");
+                return { success: true, msg: `You see nothing special about the ${target}.` };
             }
             else if (action.type === "interact") {
                 if (action.givesItem) {
@@ -663,6 +665,26 @@
                 // Check for "back" or "close" if in overlay
                 if (State.activeOverlay && (cmd === "back" || cmd === "close" || cmd === "leave")) {
                     closeOverlay();
+                    return;
+                }
+
+                // Handle "actions" command
+                if (cmd === "actions" || cmd === "help") {
+                    const actions = (scene.actions || []).filter(a => {
+                        if (a.hiddenIfHas && a.hiddenIfHas.some(i => State.inventory.includes(i))) return false;
+                        if (a.requiredItems && a.requiredItems.some(i => !State.inventory.includes(i))) return false;
+                        return true;
+                    });
+
+                    if (actions.length > 0) {
+                        const menu = actions.map(a => {
+                            if (a.type === "move" && a.successor) return `• go to ${a.successor}`;
+                            return `• ${a.cmd}`;
+                        }).join("\n");
+                        logText(`Available Actions:\n${menu}`, "menu");
+                    } else {
+                        logText("No actions available here.", "info");
+                    }
                     return;
                 }
 

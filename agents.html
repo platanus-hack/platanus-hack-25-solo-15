@@ -565,8 +565,10 @@ Soft moonlit shadows, mild atmospheric haze, physically based lighting.`;
 
       const zip = new JSZip();
 
-      // Add game.json
-      zip.file("game.json", JSON.stringify(data, null, 2));
+      // Add game.json (exclude API key)
+      const exportData = { ...data };
+      delete exportData.geminiKey;
+      zip.file("game.json", JSON.stringify(exportData, null, 2));
 
       // Add images
       let imageCount = 0;
