@@ -3,11 +3,10 @@
 
 <head>
     <meta charset="utf-8" />
-    <title>Adventure360</title>
+    <title>Platanus Hack 2025: Banandamos</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css">
     <script src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         :root {
@@ -403,7 +402,7 @@
     </div>
 
     <header>
-        <h1 id="gameTitle">Adventure360</h1>
+        <h1 id="gameTitle">Banandamos Adventures</h1>
         <div class="tabs">
             <div class="tab active" data-target="textView">Text Adventure</div>
             <div class="tab" data-target="visualView">Visual Experience</div>
@@ -535,7 +534,7 @@
                 await Promise.all(assetPromises);
 
                 // Start Game
-                els.gameTitle.textContent = State.graph.suggestedName || "Adventure360";
+                els.gameTitle.textContent = State.graph.suggestedName || "Banandamos";
                 els.loading.style.display = "none";
                 loadScene(State.graph.start);
 
